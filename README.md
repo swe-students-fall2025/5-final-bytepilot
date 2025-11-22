@@ -1,9 +1,6 @@
-![Lint-free](https://github.com/swe-students-fall2025/4-containers-primebyte/actions/workflows/lint.yml/badge.svg)
+# Forum Generator
 
-
-# ForumGenerator
-
-ForumGenerator is a containerized system that allows users to create and manage virtual characters, automatically generating fan fiction dialogues with authentic forum styling. The system uses MongoDB to store character information and a Flask web application to provide the user interface and forum generation functionality.
+Forum Generator is a containerized system that allows users to create and manage virtual characters, automatically generating fan fiction dialogues with authentic forum styling. The system uses MongoDB to store character information and a Flask web application to provide the user interface and forum generation functionality.
 
 
 ## Architecture
