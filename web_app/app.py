@@ -10,7 +10,7 @@ load_dotenv()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.secret_key = os.getenv("SECRET_KEY")
     login_manager.init_app(app)
     login_manager.login_view = "login" 

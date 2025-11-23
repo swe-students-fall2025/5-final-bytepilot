@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Forum</title>
     <link rel="stylesheet" href="../static/css/common.css">
     <link rel="stylesheet" href="../static/css/forum.css">
+    <link rel="stylesheet" href="../static/css/profile.css">
 </head>
 <body>
     <!-- Header -->
@@ -17,7 +18,7 @@
                 </div>
                 <nav class="nav">
                     <ul class="nav-list">
-                        <li><a href="index.html" class="active">Home</a></li>
+                        <li><a href="index.html">Home</a></li>
                         <li><a href="login.html">Login</a></li>
                         <li><a href="register.html">Register</a></li>
                     </ul>
@@ -34,41 +35,29 @@
         </div>
     </div>
 
-    <!-- Breadcrumbs -->
-    <div class="breadcrumbs">
-        <a href="index.html">Home</a> &gt; <span>Forum</span>
-    </div>
-
     <!-- Main Content -->
     <div id="main" class="main-container">
-        <!-- Forum Statistics -->
-        <div class="forum-stats">
-            <span>Today: 1</span> | 
-            <span>Posts: 1</span> | 
-            <span>Members: 2</span>
-        </div>
-
-        <!-- Forum Section -->
-        <div class="forum-section">
-            <div class="section-header">
-                <h2>General Discussion</h2>
+        <div class="profile-section">
+            <div class="profile-header">
+                <h1>Profile</h1>
             </div>
-
-            <!-- Forum Category -->
-            <div class="forum-category">
-                <div class="category-header">
-                    <h3>Welcome to the Forum</h3>
-                    <div class="category-stats">
-                        <span>Topics: 1</span> | 
-                        <span>Posts: 2</span>
+            
+            <div class="profile-content">
+                <div class="profile-info-card">
+                    <h2>User Information</h2>
+                    <div class="info-item">
+                        <label>Username:</label>
+                        <span>Demo User</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Email:</label>
+                        <span>demo@example.com</span>
                     </div>
                 </div>
-                <div class="category-description">
-                    General discussions and announcements
-                </div>
-                <div class="latest-post">
-                    <a href="viewthread.html">Welcome Post - Getting Started</a>
-                    <span class="post-meta">2 replies | 2024-01-15 10:30 admin</span>
+                
+                <div class="profile-actions">
+                    <a href="index.html" class="btn btn-primary">Back to Home</a>
+                    <a href="login.html" class="btn btn-secondary">Login</a>
                 </div>
             </div>
         </div>
@@ -80,8 +69,5 @@
             <p>Powered by BytePilot</p>
         </div>
     </div>
-
-    <script src="../static/js/common.js"></script>
-    <script src="../static/js/forum.js"></script>
 </body>
 </html>
