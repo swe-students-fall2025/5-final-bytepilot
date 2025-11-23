@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: forum-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: forum_user
+      MONGO_INITDB_ROOT_PASSWORD: forum_pass
+      MONGO_INITDB_DATABASE: forum_db
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  web_app:
+    build: ./web_app
+    container_name: forum-web-app
+    env_file: .env
+    depends_on:
+      - mongo
+    ports:
+      - "5000:5000"
+
+volumes:
+  mongo_data:
