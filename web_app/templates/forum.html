@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discussion</title>
+    <link rel="stylesheet" href="../static/css/common.css">
+    <link rel="stylesheet" href="../static/css/forum.css">
+</head>
+<body>
+    <!-- Header -->
+    <div id="header" class="header">
+        <div class="header-top">
+            <div class="header-container">
+                <div class="logo">
+                    <a href="index.html">Forum</a>
+                </div>
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="login.html">Login</a></li>
+                        <li><a href="register.html">Register</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        <div class="header-search-bar">
+            <div class="header-container">
+                <div class="search-bar-container">
+                    <input type="text" placeholder="Enter search content" class="search-bar-input">
+                    <button class="search-bar-btn">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+        <a href="index.html">Home</a> &gt; 
+        <a href="index.html">Forum</a> &gt; 
+        <span>General Discussion</span>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main" class="main-container">
+        <!-- Forum Header -->
+        <div class="forum-header-section">
+            <div class="forum-title">
+                <h2>General Discussion</h2>
+                <div class="forum-stats-small">
+                    <span>Topics: 1</span> | 
+                    <span>Posts: 2</span>
+                </div>
+            </div>
+            <div class="forum-actions">
+                <button class="btn-icon">⭐ Favorite</button>
+            </div>
+        </div>
+
+        <!-- Post Button -->
+        <div class="post-button-container">
+            <button class="btn btn-primary post-btn">Post</button>
+        </div>
+
+        <!-- Thread List -->
+        <div class="thread-list-container">
+            <div class="thread-filters">
+                <a href="#" class="filter-active">All Topics</a>
+                <button class="refresh-btn">🔄</button>
+            </div>
+
+            <table class="thread-table">
+                <thead>
+                    <tr>
+                        <th class="col-icon"></th>
+                        <th class="col-title">Title</th>
+                        <th class="col-author">Author</th>
+                        <th class="col-replies">Replies/Views</th>
+                        <th class="col-last">Last Post</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="thread-row">
+                        <td class="col-icon">📁</td>
+                        <td class="col-title">
+                            <a href="viewthread.html">Welcome Post - Getting Started</a>
+                        </td>
+                        <td class="col-author">admin</td>
+                        <td class="col-replies">2 / 156</td>
+                        <td class="col-last">
+                            <div>user1</div>
+                            <div class="last-time">2024-01-15 11:20</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <span>1/1</span>
+                <button class="btn btn-secondary">Return</button>
+            </div>
+        </div>
+
+        <!-- Quick Post Section -->
+        <div class="quick-post-section">
+            <h3>Quick Post</h3>
+            <form class="quick-post-form">
+                <div class="post-title-input">
+                    <input type="text" placeholder="Post title" maxlength="200">
+                    <span class="char-count">Can also enter 200 characters</span>
+                </div>
+                <div class="post-editor">
+                    <div class="editor-toolbar">
+                        <button type="button" class="toolbar-btn" title="Bold">B</button>
+                        <button type="button" class="toolbar-btn" title="Italic">I</button>
+                        <button type="button" class="toolbar-btn" title="Link">🔗</button>
+                        <button type="button" class="toolbar-btn" title="Image">🖼️</button>
+                    </div>
+                    <textarea class="post-content" rows="6" placeholder="You need to log in to post | Login | Register now"></textarea>
+                </div>
+                <div class="post-actions">
+                    <button type="submit" class="btn btn-primary">Publish Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer" class="footer">
+        <div class="footer-container">
+            <p>Powered by BytePilot</p>
+        </div>
+    </div>
+
+    <script src="../static/js/common.js"></script>
+    <script src="../static/js/forum.js"></script>
+</body>
+</html>
