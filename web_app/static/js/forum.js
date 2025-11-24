@@ -1,5 +1,3 @@
-// Forum-specific JavaScript
-
 // Setup event listeners
 function setupEventListeners() {
     // Quick post form
@@ -60,7 +58,6 @@ function copyThreadLink() {
             console.error('Failed to copy:', err);
         });
     } else {
-        // Fallback
         const textarea = document.createElement('textarea');
         textarea.value = url;
         document.body.appendChild(textarea);

@@ -10,8 +10,7 @@ services:
       MONGO_INITDB_DATABASE: forum_db
     volumes:
       - mongo_data:/data/db
-    ports:
-      - "27017:27017"
+
 
   web_app:
     build: ./web_app
@@ -20,7 +19,10 @@ services:
     depends_on:
       - mongo
     ports:
-      - "5000:5000"
+      - "5001:5001"
+    volumes:
+      - ./web_app/static:/app/static
+      - ./web_app/templates:/app/templates
 
 volumes:
   mongo_data:

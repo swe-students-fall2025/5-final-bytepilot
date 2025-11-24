@@ -18,15 +18,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all the application code
 COPY app.py .
 COPY models.py .
-COPY .env .          # optional, only if you want .env inside docker, usually not needed
+
 COPY templates/ ./templates/
 COPY static/ ./static/
 
 # Set Flask environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_RUN_PORT=5001
 
-# Expose port 5001 (your app runs on 5001)
+# Expose port 5001
 EXPOSE 5001
 
 # Run Flask (same command as your __main__)
