@@ -65,9 +65,14 @@ def create_app():
             username = request.form.get("username")
             email = request.form.get("email")
             password = request.form.get("password")
+            confirm_password = request.form.get("confirm-password")
 
             if not username or not email or not password:
                 flash("Please fill in all fields!")
+                return redirect(url_for("register"))
+            
+            if password != confirm_password:
+                flash("Passwords do not match!")
                 return redirect(url_for("register"))
             
             db_email = app.db.users.find_one({"email": email})
@@ -94,6 +99,14 @@ def create_app():
     def profile():
         userdata = app.db.users.find_one({"_id": ObjectId(current_user.id)})
         return render_template("profile.html", user = userdata)
+    
+    @app.route("/forum")
+    def forum():
+        return render_template("forum.html")
+    
+    @app.route("/viewthread")
+    def viewthread():
+        return render_template("viewthread.html")
         
     return app
 
