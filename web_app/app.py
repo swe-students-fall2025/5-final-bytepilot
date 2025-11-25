@@ -107,6 +107,14 @@ def create_app():
     @app.route("/viewthread")
     def viewthread():
         return render_template("viewthread.html")
+    
+    @app.route("/createforum")
+    def createforum():
+        return render_template("createforum.html")
+    
+    @app.route("/community")
+    def community():
+        return render_template("community.html")
         
     return app
 

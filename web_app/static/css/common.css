@@ -148,6 +148,7 @@ a:hover {
 .form-group input[type="url"],
 .form-group input[type="email"],
 .form-group input[type="password"],
+.form-group input[type="file"],
 .form-group textarea,
 .form-group select {
     width: 100%;
@@ -157,6 +158,11 @@ a:hover {
     font-size: 14px;
     font-family: inherit;
     transition: border-color 0.2s;
+}
+
+.form-group input[type="file"] {
+    padding: 8px;
+    cursor: pointer;
 }
 
 .form-group input:focus,

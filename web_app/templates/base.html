@@ -11,7 +11,7 @@
 <body>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
-            <div class="flash-messages" style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 2000; max-width: 600px; width: 90%;">
+            <div class="flash-messages">
                 {% for message in messages %}
                     <div class="flash-message">{{ message }}</div>
                 {% endfor %}
@@ -39,6 +39,8 @@
                 <nav class="nav">
                     <ul class="nav-list">
                         <li><a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Home</a></li>
+                        <li><a href="{{ url_for('forum') }}" {% if request.endpoint == 'forum' %}class="active"{% endif %}>My Forums</a></li>
+                        <li><a href="{{ url_for('community') }}" {% if request.endpoint == 'community' %}class="active"{% endif %}>Community</a></li>
                         {% if current_user.is_authenticated %}
                             <li><a href="{{ url_for('profile') }}" {% if request.endpoint == 'profile' %}class="active"{% endif %}>Profile</a></li>
                             <li><a href="{{ url_for('logout') }}">Logout</a></li>

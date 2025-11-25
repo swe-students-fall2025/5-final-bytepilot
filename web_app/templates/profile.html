@@ -23,11 +23,11 @@
             <h2>User Information</h2>
             <div class="info-item">
                 <label>Username:</label>
-                <span>{{ user.username if user else 'N/A' }}</span>
+                <span>{{ user.username if user else current_user.username if current_user.is_authenticated else 'N/A' }}</span>
             </div>
             <div class="info-item">
                 <label>Email:</label>
-                <span>{{ user.email if user else 'N/A' }}</span>
+                <span>{{ user.email if user else current_user.email if current_user.is_authenticated else 'N/A' }}</span>
             </div>
         </div>
         
