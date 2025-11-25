@@ -10,31 +10,56 @@
 
 {% block content %}
 <div class="forum-stats">
-    <span>Today: 1</span> | 
-    <span>Posts: 1</span> | 
-    <span>Members: 2</span>
+    <span>Total Forums: <span id="total-forums">0</span></span> | 
+    <span>Total Characters: <span id="total-characters">0</span></span> | 
+    <span>Total Posts: <span id="total-posts">0</span></span>
 </div>
 
-<div class="forum-section">
-    <div class="section-header">
-        <h2>General Discussion</h2>
-    </div>
+    <div class="forum-section">
+        <div class="section-header">
+            <h2>Forum Generator</h2>
+            <div class="section-actions">
+                <a href="/createforum" class="btn btn-primary">Create New Forum</a>
+            </div>
+        </div>
 
     <div class="forum-category">
         <div class="category-header">
-            <h3>Welcome to the Forum</h3>
+            <h3>My Forums</h3>
             <div class="category-stats">
-                <span>Topics: 1</span> | 
-                <span>Posts: 2</span>
+                <span>Forums: <span id="forum-count">0</span></span>
             </div>
         </div>
         <div class="category-description">
-            General discussions and announcements
+            View and manage your generated fan fiction forum dialogues
         </div>
-        <div class="latest-post">
-            <a href="{{ url_for('forum') }}">Welcome Post - Getting Started</a>
-            <span class="post-meta">2 replies | 2024-01-15 10:30 admin</span>
+        <div id="forums-list" class="forums-list">
+            <p class="empty-message-center">No forums created yet. <a href="/createforum">Create your first forum</a> to get started!</p>
+        </div>
+    </div>
+    
+    <div class="forum-section forum-section-spaced">
+        <div class="section-header">
+            <h2>Community</h2>
+            <div class="section-actions">
+                <a href="/community" class="btn btn-primary">View All</a>
+            </div>
+        </div>
+        <div class="forum-category">
+            <div class="category-header">
+                <h3>Published Forums</h3>
+                <div class="category-stats">
+                    <span>Published: <span id="published-count">0</span></span>
+                </div>
+            </div>
+            <div class="category-description">
+                Explore fan fiction forum dialogues created by the community
+            </div>
+            <div id="published-list" class="forums-list">
+                <p class="empty-message-center">No published forums yet. Be the first to publish!</p>
+            </div>
         </div>
     </div>
 </div>
+
 {% endblock %}

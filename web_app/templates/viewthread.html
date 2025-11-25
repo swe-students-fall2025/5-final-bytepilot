@@ -21,7 +21,6 @@
         <h1>Welcome Post - Getting Started <a href="#" class="copy-link">[Copy Link]</a></h1>
     </div>
     <div class="thread-actions">
-        <button class="btn btn-primary post-btn">Post</button>
         <a href="{{ url_for('forum') }}" class="btn btn-secondary">Return to List</a>
     </div>
 </div>
@@ -88,24 +87,5 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="reply-section">
-    <div class="reply-header">
-        <button class="btn btn-primary post-btn">Post</button>
-        <a href="{{ url_for('forum') }}" class="btn btn-secondary">Return to List</a>
-    </div>
-    <form class="reply-form">
-        <div class="editor-toolbar">
-            <button type="button" class="toolbar-btn" title="Bold">B</button>
-            <button type="button" class="toolbar-btn" title="Italic">I</button>
-            <button type="button" class="toolbar-btn" title="Link">🔗</button>
-            <button type="button" class="toolbar-btn" title="Image">🖼️</button>
-        </div>
-        <textarea class="reply-content" rows="8" placeholder="You need to log in to reply | Login | Register now"></textarea>
-        <div class="reply-actions">
-            <button type="submit" class="btn btn-primary">Submit Reply</button>
-        </div>
-    </form>
 </div>
 {% endblock %}
