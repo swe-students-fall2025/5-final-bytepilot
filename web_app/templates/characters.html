@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}My Characters - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; 
+    <span>My Characters</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="forum-header-section">
+    <div class="forum-title">
+        <h2>My Characters</h2>
+        <div class="forum-stats-small">
+            <span>Total Characters: <span id="total-characters">0</span></span>
+        </div>
+    </div>
+    <div class="forum-actions">
+        <a href="{{ url_for('addcharacter') }}" class="btn btn-primary">Add Character</a>
+    </div>
+</div>
+
+<div class="thread-list-container">
+    <div id="characters-list" class="characters-list">
+        <div style="text-align: center; padding: 40px; color: #999;">Loading characters...</div>
+    </div>
+</div>
+{% endblock %}
+
