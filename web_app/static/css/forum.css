@@ -430,9 +430,10 @@
 }
 
 .character-result-name {
-    font-weight: 500;
+    font-weight: 600;
     color: #333;
     margin-bottom: 4px;
+    font-size: 14px;
 }
 
 .character-result-nickname {
@@ -442,8 +443,9 @@
 }
 
 .character-result-fandom {
-    font-size: 11px;
+    font-size: 12px;
     color: #999;
+    margin-top: 2px;
 }
 
 .post-editor-item {
@@ -665,6 +667,26 @@
 .col-last {
     width: 150px;
     text-align: right;
+}
+
+.col-actions {
+    width: 100px;
+    text-align: center;
+}
+
+.btn-edit-forum {
+    padding: 4px 12px;
+    background-color: #1e88e5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.btn-edit-forum:hover {
+    background-color: #1565c0;
 }
 
 .last-time {
@@ -910,6 +932,22 @@
     font-size: 14px;
 }
 
+.character-select-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.character-select-header label {
+    margin: 0;
+}
+
+.character-select-header .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
 .auth-form-forum .form-group input {
     width: 100%;
     padding: 12px;
@@ -956,5 +994,95 @@
 
 .auth-footer-forum a:hover {
     text-decoration: underline;
+}
+
+/* Characters List Page */
+.characters-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.character-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: box-shadow 0.2s;
+}
+
+.character-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.character-card-avatar {
+    text-align: center;
+}
+
+.character-card-avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e0e0e0;
+}
+
+.character-card-info {
+    flex: 1;
+}
+
+.character-card-name {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+.character-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.character-card-detail-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.detail-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.detail-value {
+    color: #333;
+}
+
+.character-card-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn-danger {
+    background-color: #f44336;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-color: #d32f2f;
 }
 

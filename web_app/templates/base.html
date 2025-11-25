@@ -39,8 +39,9 @@
                 <nav class="nav">
                     <ul class="nav-list">
                         <li><a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Home</a></li>
-                        <li><a href="{{ url_for('forum') }}" {% if request.endpoint == 'forum' %}class="active"{% endif %}>My Forums</a></li>
                         <li><a href="{{ url_for('community') }}" {% if request.endpoint == 'community' %}class="active"{% endif %}>Community</a></li>
+                        <li><a href="{{ url_for('forum') }}" {% if request.endpoint == 'forum' %}class="active"{% endif %}>My Forums</a></li>
+                        <li><a href="{{ url_for('characters') }}" {% if request.endpoint == 'characters' %}class="active"{% endif %}>Characters</a></li>
                         {% if current_user.is_authenticated %}
                             <li><a href="{{ url_for('profile') }}" {% if request.endpoint == 'profile' %}class="active"{% endif %}>Profile</a></li>
                             <li><a href="{{ url_for('logout') }}">Logout</a></li>
@@ -74,8 +75,8 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
     <script src="{{ url_for('static', filename='js/forum.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/frontend.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

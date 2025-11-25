@@ -115,6 +115,14 @@ def create_app():
     @app.route("/community")
     def community():
         return render_template("community.html")
+    
+    @app.route("/addcharacter")
+    def addcharacter():
+        return render_template("addcharacter.html")
+    
+    @app.route("/characters")
+    def characters():
+        return render_template("characters.html")
         
     return app
 
