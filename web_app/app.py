@@ -107,6 +107,37 @@ def create_app():
     @app.route("/viewthread")
     def viewthread():
         return render_template("viewthread.html")
+    
+    @app.route("/characterlist")
+    @login_required
+    def characterlist():
+        user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+        character_ids = user.get("characters", [])
+        characters = app.db.characters.find({"_id": {"$in": character_ids}})
+        return render_template("characterlist.html", characters=characters)
+    
+    @app.route("/createcharacter")
+    def createcharacter():
+        name = request.args.get("name", "Uknown character")
+        nickname = request.args.get("nickname", name)
+        fandom = request.args.get("fandom", "Original character")
+        pic = request.args.get("pic", "default.png")
+
+        character = ({
+            "name": name,
+            "nickname": nickname,
+            "fandom": fandom,
+            "pic": pic
+        })
+        app.db.characters.insert_one(character)
+
+        id = character.get("_id")
+        app.db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$addToSet": {"characters": id}}
+        )
+
+        return render_template("characterlist.html")
         
     return app
 
