@@ -1,21 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}My Forums - Forum Generator{% endblock %}
+{% block title %}Community - Forum Generator{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
     <a href="{{ url_for('index') }}">Home</a> &gt; 
-    <span>My Forums</span>
+    <span>Community</span>
 </div>
 {% endblock %}
 
 {% block content %}
 <div class="forum-header-section">
     <div class="forum-title">
-        <h2>My Forums</h2>
+        <h2>Community</h2>
         <div class="forum-stats-small">
-            <span>Drafts: <span id="draft-count">0</span></span> | 
-            <span>Published: <span id="published-count">0</span></span>
+            <span>Published Forums: <span id="published-count">0</span></span>
         </div>
     </div>
     <div class="forum-actions">
@@ -25,9 +24,7 @@
 
 <div class="thread-list-container">
     <div class="thread-filters">
-        <a href="#" class="filter-tab active" data-filter="all">All</a>
-        <a href="#" class="filter-tab" data-filter="draft">Drafts</a>
-        <a href="#" class="filter-tab" data-filter="published">Published</a>
+        <span class="filter-active">All Published Forums</span>
     </div>
 
     <table class="thread-table">
@@ -37,14 +34,13 @@
                 <th class="col-title">Forum Title</th>
                 <th class="col-author">Characters</th>
                 <th class="col-replies">Posts</th>
-                <th class="col-status">Status</th>
-                <th class="col-last">Created</th>
+                <th class="col-last">Published</th>
             </tr>
         </thead>
         <tbody id="forums-table-body">
             <tr>
-                <td colspan="6" class="empty-table-cell">
-                    No forums created yet. <a href="/createforum">Create your first forum</a> to get started!
+                <td colspan="5" class="empty-table-cell">
+                    No published forums yet. Be the first to publish a forum!
                 </td>
             </tr>
         </tbody>
@@ -54,4 +50,6 @@
         <span id="pagination-info">0 forums</span>
     </div>
 </div>
+
 {% endblock %}
+

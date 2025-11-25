@@ -139,6 +139,15 @@ def create_app():
 
         return render_template("characterlist.html")
         
+    
+    @app.route("/createforum")
+    def createforum():
+        return render_template("createforum.html")
+    
+    @app.route("/community")
+    def community():
+        return render_template("community.html")
+        
     return app
 
 if __name__ == "__main__":

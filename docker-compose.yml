@@ -23,6 +23,7 @@ services:
     volumes:
       - ./web_app/static:/app/static
       - ./web_app/templates:/app/templates
+      - ./web_app/app.py:/app/app.py
 
 volumes:
   mongo_data:
