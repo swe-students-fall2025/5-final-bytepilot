@@ -108,15 +108,16 @@ def create_app():
     def viewthread():
         return render_template("viewthread.html")
     
+    #character routes
     @app.route("/characterlist")
     @login_required
     def characterlist():
         user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
-        character_ids = user.get("characters", [])
-        characters = app.db.characters.find({"_id": {"$in": character_ids}})
+        characters = user.get("characters", [])
         return render_template("characterlist.html", characters=characters)
     
-    @app.route("/createcharacter")
+    @app.route("/createcharacter", methods = ['GET', 'POST'])
+    @login_required
     def createcharacter():
         name = request.args.get("name", "Uknown character")
         nickname = request.args.get("nickname", name)
@@ -129,18 +130,29 @@ def create_app():
             "fandom": fandom,
             "pic": pic
         })
-        app.db.characters.insert_one(character)
-
-        id = character.get("_id")
         app.db.users.update_one(
             {"_id": ObjectId(current_user.id)},
-            {"$addToSet": {"characters": id}}
+            {"$push": {"characters": character}}
         )
 
-        return render_template("characterlist.html")
+        return redirect(url_for("characterlist"))
+    
+    @app.route("/deletecharacter/<char_id>", methods=['POST'])
+    @login_required
+    def deletecharacter(char_id):
+        result = app.db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$pull": {"characters": {"_id": ObjectId(char_id)}}}
+        )
+        if result.modified_count == 0:
+            flash("Character not found or could not be deleted.")
+        else:
+            flash("Character deleted successfully.")
+        return redirect(url_for("characterlist"))
         
     
-    @app.route("/createforum")
+    @app.route("/createforum", methods=['GET', 'POST'])
+    @login_required
     def createforum():
         return render_template("createforum.html")
     
