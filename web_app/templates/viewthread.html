@@ -14,78 +14,19 @@
 {% block content %}
 <div class="thread-info-bar">
     <div class="thread-stats">
-        <span>Views: 156</span> | 
-        <span>Replies: 2</span>
+        <span>Views: <span id="thread-views">0</span></span> | 
+        <span>Replies: <span id="thread-replies">0</span></span>
     </div>
     <div class="thread-title-bar">
-        <h1>Welcome Post - Getting Started <a href="#" class="copy-link">[Copy Link]</a></h1>
+        <h1 id="thread-title">Loading...</h1> <a href="#" class="copy-link">[Copy Link]</a>
     </div>
     <div class="thread-actions">
         <a href="{{ url_for('forum') }}" class="btn btn-secondary">Return to List</a>
     </div>
 </div>
 
-<div class="posts-container">
-    <div class="post-item" data-floor="1">
-        <div class="post-sidebar">
-            <div class="user-avatar">
-                <img src="https://via.placeholder.com/80" alt="admin">
-            </div>
-            <div class="user-name">admin</div>
-            <div class="user-stats">
-                <div>1 Topics</div>
-                <div>1 Posts</div>
-                <div>100 Points</div>
-            </div>
-            <div class="user-title">Moderator</div>
-        </div>
-        <div class="post-content-area">
-            <div class="post-header">
-                <span class="post-number">1#</span>
-                <span class="post-author-label">Original Poster</span>
-                <span class="post-time">Posted on 2024-01-15 10:30:00</span>
-                <a href="#" class="view-author-only">View author only</a>
-                <input type="number" placeholder="Go to floor" class="goto-floor">
-            </div>
-            <div class="post-body">
-                <p>Welcome to our forum! This is a demo post to showcase the forum functionality.</p>
-                <p>Feel free to explore the features and post your thoughts.</p>
-            </div>
-            <div class="post-footer">
-                <button class="post-action">★ Collect</button>
-                <button class="post-action">👍 Like</button>
-                <a href="#" class="post-action">Reply</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="post-item" data-floor="2">
-        <div class="post-sidebar">
-            <div class="user-avatar">
-                <img src="https://via.placeholder.com/80" alt="user1">
-            </div>
-            <div class="user-name">user1</div>
-            <div class="user-stats">
-                <div>0 Topics</div>
-                <div>1 Posts</div>
-                <div>10 Points</div>
-            </div>
-            <div class="user-title">Member</div>
-        </div>
-        <div class="post-content-area">
-            <div class="post-header">
-                <span class="post-number">2#</span>
-                <span class="post-time">Posted on 2024-01-15 11:20:00</span>
-                <a href="#" class="view-author-only">View author only</a>
-            </div>
-            <div class="post-body">
-                <p>Thanks for the welcome! Looking forward to participating in discussions.</p>
-            </div>
-            <div class="post-footer">
-                <button class="post-action">👍 Like</button>
-                <a href="#" class="post-action">Reply</a>
-            </div>
-        </div>
-    </div>
+<div class="posts-container" id="posts-container">
+    <!-- Posts will be loaded dynamically by JavaScript -->
+    <div style="text-align: center; padding: 40px; color: #999;">Loading forum content...</div>
 </div>
 {% endblock %}

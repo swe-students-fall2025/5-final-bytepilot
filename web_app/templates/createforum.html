@@ -25,7 +25,10 @@
             </div>
             
             <div class="form-group">
-                <label>Select Characters:</label>
+                <div class="character-select-header">
+                    <label>Select Characters:</label>
+                    <a href="{{ url_for('addcharacter') }}" class="btn btn-secondary">Add Character</a>
+                </div>
                 <div id="selected-characters-tags" class="selected-characters-tags">
                     <p class="empty-message">No characters selected. Search and click on characters below to add them.</p>
                 </div>
@@ -48,7 +51,6 @@
             </div>
             
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="preview-btn">Preview</button>
                 <button type="button" class="btn btn-secondary" id="save-draft-btn">Save as Draft</button>
                 <button type="button" class="btn btn-primary" id="publish-btn">Publish</button>
                 <a href="{{ url_for('forum') }}" class="btn btn-secondary">Cancel</a>
