@@ -1,10 +1,11 @@
 import os
 from bson import ObjectId
-from flask import Flask, redirect, render_template, request, url_for, flash
+from flask import Flask, redirect, render_template, request, url_for, flash,jsonify
 from pymongo import MongoClient
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from models import User
 from dotenv import load_dotenv
+from datetime import datetime
 load_dotenv()
 
 login_manager = LoginManager()
@@ -84,6 +85,8 @@ def create_app():
                 "username": username,
                 "email": email,
                 "password": password,
+                "characters": [],
+                "threads": [],
             })
             doc = app.db.users.insert_one(new_user)
 
@@ -104,27 +107,59 @@ def create_app():
     def forum():
         return render_template("forum.html")
     
-    @app.route("/viewthread")
-    def viewthread():
+    @app.route("/viewthread/<thread_id>")
+    def viewthread(thread_id):
         return render_template("viewthread.html")
     
+    @app.route("/api/thread/<thread_id>")
+    def get_thread(thread_id):
+        try:
+            thread_oid = ObjectId(thread_id)
+        except Exception:
+            return jsonify({"ok": False, "error": "Invalid thread id"}), 400
+        
+        thread = app.db.forums.find_one({"_id": thread_oid})
+        if not thread:
+            return jsonify({"ok": False, "error": "Thread not found"}), 404
+        
+        status = thread.get("status", "draft")
+        owner = thread.get("user_id")
+        
+        if status != "published":
+            if not current_user.is_authenticated or owner != current_user.id:
+                return jsonify({"ok": False, "error": "Thread not visible to you"}), 403
+        
+        thread_data = {
+            "id": str(thread.get("_id")),
+            "title": thread.get("title", ""),
+            "status": status,
+            "posts": thread.get("posts", []),
+            "updated_at": thread.get("updated_at").isoformat() if thread.get("updated_at") else None,
+            "created_at": thread.get("created_at").isoformat() if thread.get("created_at") else None,
+        }
+        
+        return jsonify({"ok": True, "thread": thread_data})
+    
     #character routes
-    @app.route("/characterlist")
+    @app.route("/characters")
     @login_required
-    def characterlist():
+    def characters():
         user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
         characters = user.get("characters", [])
-        return render_template("characterlist.html", characters=characters)
+        return render_template("characters.html", characters=characters)
     
-    @app.route("/createcharacter", methods = ['GET', 'POST'])
+    @app.route("/addcharacter", methods = ['GET', 'POST'])
     @login_required
-    def createcharacter():
-        name = request.args.get("name", "Uknown character")
-        nickname = request.args.get("nickname", name)
-        fandom = request.args.get("fandom", "Original character")
-        pic = request.args.get("pic", "default.png")
-
+    def addcharacter():
+        if request.method == 'GET':
+            return render_template("addcharacter.html")
+        name = request.form.get("name", "Uknown character")
+        nickname = request.form.get("nickname", name)
+        fandom = request.form.get("fandom", "Original character")
+        pic = request.form.get("pic", "default.png")
+        character_id = ObjectId()
         character = ({
+            "_id": character_id,
             "name": name,
             "nickname": nickname,
             "fandom": fandom,
@@ -135,7 +170,7 @@ def create_app():
             {"$push": {"characters": character}}
         )
 
-        return redirect(url_for("characterlist"))
+        return redirect(url_for("characters"))
     
     @app.route("/deletecharacter/<char_id>", methods=['POST'])
     @login_required
@@ -154,19 +189,62 @@ def create_app():
     @app.route("/createforum", methods=['GET', 'POST'])
     @login_required
     def createforum():
-        return render_template("createforum.html")
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data:
+                return jsonify({"ok": False, "error": "Expected JSON body"}), 400
+            
+            title = (data.get("title", "Untitled")).strip()
+            status = data.get("status", "draft")
+            posts_data = data.get("posts", [])
+            thread_id = data.get("id")
+            if not title:
+                return jsonify({"ok": False, "error": "Title is required"}), 400
+            if not posts_data:
+                return jsonify({"ok": False, "error": "At least one post is required"}), 400
+            
+            now = datetime.utcnow()
+
+            thread = {
+                "user_id": ObjectId(current_user.id),
+                "title": title,
+                "status": status,
+                "posts": posts_data,
+                "updated_at": now,
+                "published_at": now if status == "published" else None,
+            }
+
+            if thread_id:
+                try:
+                    thread_oid = ObjectId(thread_id)
+                except Exception:
+                    return jsonify({"ok": False, "error": "Invalid thread id"}), 400
+                
+                result = app.db.forums.update_one(
+                    {"_id": thread_oid, "user_id": ObjectId(current_user.id)},
+                    {"$set": thread}
+                )
+                if result.matched_count == 0:
+                    return jsonify({"ok": False, "error": "Thread not found"}), 404
+                
+                return jsonify({"ok": True, "id": str(thread_oid)})
+            
+            thread["created_at"] = now
+            thread = app.db.forums.insert_one(thread)
+            app.db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$push": {"threads": thread.inserted_id}}
+            )
+            return jsonify({"ok": True, "id": str(thread.inserted_id)})
+                
+        else:
+            user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+            characters = user.get("characters", [])
+            return render_template("createforum.html", characters=characters)
     
     @app.route("/community")
     def community():
         return render_template("community.html")
-    
-    @app.route("/addcharacter")
-    def addcharacter():
-        return render_template("addcharacter.html")
-    
-    @app.route("/characters")
-    def characters():
-        return render_template("characters.html")
         
     return app
 

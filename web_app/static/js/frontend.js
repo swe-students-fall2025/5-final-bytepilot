@@ -112,9 +112,16 @@ function goToFloor(floor) {
 }
 
 function loadCharacters() {
+    /*
     const stored = localStorage.getItem('characters');
     if (stored) {
         characters = JSON.parse(stored);
+    }
+    */
+    if (window.INIT_CHARACTERS) {
+        characters = window.INIT_CHARACTERS;
+    } else {
+        characters = [];
     }
     
     const searchInput = document.getElementById('character-search-input');
@@ -316,7 +323,7 @@ function selectDatabaseCharacter(char) {
     
     document.getElementById('nickname').focus();
 }
-
+/*
 function saveCharacter(name, fandom, nickname, pic) {
     try {
         let characters = JSON.parse(localStorage.getItem('characters') || '[]');
@@ -341,11 +348,11 @@ function saveCharacter(name, fandom, nickname, pic) {
         console.error(e);
     }
 }
-
+*/
 function editCharacter(index) {
     alert('Edit functionality will be implemented. For now, please delete and recreate the character.');
 }
-
+/*
 function deleteCharacter(index) {
     if (!confirm('Are you sure you want to delete this character? This action cannot be undone.')) {
         return;
@@ -366,7 +373,7 @@ function deleteCharacter(index) {
         console.error(e);
     }
 }
-
+*/
 function addPost() {
     const container = document.getElementById('posts-container');
     if (!container) return;
@@ -471,6 +478,10 @@ function closePreview() {
         modal.classList.add('hidden');
     }
 }
+function getThreadIdFromPath() {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1];
+}
 
 function saveForum(status) {
     const titleInput = document.getElementById('forum-title');
@@ -534,7 +545,7 @@ function saveForum(status) {
         alert('Please add at least one post!');
         return;
     }
-    
+    /*
     try {
         let forums = JSON.parse(localStorage.getItem('forums') || '[]');
         const editingForumId = sessionStorage.getItem('editingForumId');
@@ -611,6 +622,39 @@ function saveForum(status) {
         alert('Error saving forum: ' + e.message);
         console.error(e);
     }
+    */
+   // use backend API to save forum instead of localStorage
+    const editingForumId = sessionStorage.getItem('editingForumId') || null;
+
+    const payload = {
+        id: editingForumId, 
+        title: title,
+        status: status || 'draft',
+        posts: posts
+    };
+
+    fetch('/createforum', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.ok) {
+            alert('Error saving forum: ' + (data.error || 'Unknown error'));
+            return;
+        }
+        // clear editing state
+        sessionStorage.removeItem('editingForumId');
+        window.location.href = `/viewthread/${data.id}`;
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Network error saving forum');
+    });
+
 }
 
 function loadForumForEdit(forumId) {
@@ -958,6 +1002,7 @@ function initCommunity() {
 }
 
 function initViewThread() {
+    /*
     const urlParams = new URLSearchParams(window.location.search);
     const forumId = urlParams.get('id');
     
@@ -1080,8 +1125,97 @@ function initViewThread() {
     if (breadcrumbSpan) {
         breadcrumbSpan.textContent = forum.title;
     }
+    */
+   const threadId = getThreadIdFromPath();
+    if (!threadId) {
+        document.getElementById('posts-container').innerHTML =
+            '<div style="text-align: center; padding: 40px; color: #999;">No thread ID provided.</div>';
+        return;
+    }
+
+    fetch(`/api/thread/${threadId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                document.getElementById('posts-container').innerHTML =
+                    `<div style="text-align: center; padding: 40px; color: #999;">${escapeHtml(data.error || 'Unable to load thread.')}</div>`;
+                return;
+            }
+
+            renderThread(data.thread);
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('posts-container').innerHTML =
+                '<div style="text-align: center; padding: 40px; color: #999;">Error loading thread.</div>';
+        });
 }
 
+function renderThread(thread) {
+    // Update title and counts
+    document.getElementById('thread-title').textContent = thread.title || 'Untitled Thread';
+    document.getElementById('thread-replies').textContent = thread.posts.length - 1;
+    document.getElementById('thread-views').textContent = Math.floor(Math.random() * 500) + 100;
+
+    // Update breadcrumbs last item
+    const breadcrumbSpan = document.querySelector('.breadcrumbs span:last-child');
+    if (breadcrumbSpan) {
+        breadcrumbSpan.textContent = thread.title;
+    }
+
+    const postsContainer = document.getElementById('posts-container');
+    postsContainer.innerHTML = '';
+
+    if (!thread.posts.length) {
+        postsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #999;">
+                No posts in this thread.
+            </div>`;
+        return;
+    }
+
+    thread.posts.forEach((post, index) => {
+        const isOP = index === 0;
+
+        const postItem = document.createElement('div');
+        postItem.className = 'post-item';
+        postItem.dataset.floor = post.floor;
+
+        const sidebar = document.createElement('div');
+        sidebar.className = 'post-sidebar';
+        sidebar.innerHTML = `
+            <div class="user-avatar">
+                <img src="${post.avatar || 'https://via.placeholder.com/80'}" alt="">
+            </div>
+            <div class="user-name">${escapeHtml(post.nickname || "Unknown")}</div>
+            <div class="user-stats">
+                <div>Floor: ${post.floor}</div>
+            </div>
+        `;
+
+        const contentArea = document.createElement('div');
+        contentArea.className = 'post-content-area';
+        contentArea.innerHTML = `
+            <div class="post-header">
+                <span class="post-number">${post.floor}#</span>
+                ${isOP ? '<span class="post-author-label">Original Poster</span>' : ''}
+                <span class="post-time">${new Date(thread.created_at).toLocaleString()}</span>
+            </div>
+            <div class="post-body">
+                ${escapeHtml(post.content).replace(/\n/g, '<br>')}
+            </div>
+            <div class="post-footer">
+                <button class="post-action">👍 Like</button>
+                <a href="#" class="post-action">Reply</a>
+            </div>
+        `;
+
+        postItem.appendChild(sidebar);
+        postItem.appendChild(contentArea);
+        postsContainer.appendChild(postItem);
+    });
+}
+/*
 function initCharactersList() {
     const characters = JSON.parse(localStorage.getItem('characters') || '[]');
     const charactersList = document.getElementById('characters-list');
@@ -1139,7 +1273,7 @@ function initCharactersList() {
         charactersList.appendChild(characterCard);
     });
 }
-
+*/
 function initCreateForum() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -1229,7 +1363,7 @@ function initAddCharacter() {
             }
         });
     }
-    
+    /*
     const form = document.getElementById('add-character-form');
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -1262,6 +1396,7 @@ function initAddCharacter() {
             }
         });
     }
+    */
 }
 
 function initRegister() {
@@ -1301,7 +1436,9 @@ document.addEventListener('DOMContentLoaded', function() {
         initAddCharacter();
     } else if (document.getElementById('posts-container') && document.getElementById('thread-title')) {
         initViewThread();
+    /*
     } else if (document.getElementById('characters-list')) {
         initCharactersList();
+    */
     }
 });
