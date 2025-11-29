@@ -112,17 +112,28 @@ function goToFloor(floor) {
 }
 
 function loadCharacters() {
+    /*
     const stored = localStorage.getItem('characters');
     if (stored) {
         characters = JSON.parse(stored);
     }
+    */
+    if (Array.isArray(window.WINDOW_CHARACTERS_DATA)) {
+        characters = window.WINDOW_CHARACTERS_DATA;
+    } else {
+        characters = [];
+    }
+
+    console.log('loadCharacters → characters =', characters);
     
     const searchInput = document.getElementById('character-search-input');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             performCharacterSearch(this.value.trim());
         });
-        
+        searchInput.addEventListener('focus', function() {
+            performCharacterSearch(this.value.trim());
+        });
         document.addEventListener('click', function(e) {
             const searchContainer = document.querySelector('.character-search-container');
             if (searchContainer && !searchContainer.contains(e.target)) {
@@ -316,7 +327,7 @@ function selectDatabaseCharacter(char) {
     
     document.getElementById('nickname').focus();
 }
-
+/*
 function saveCharacter(name, fandom, nickname, pic) {
     try {
         let characters = JSON.parse(localStorage.getItem('characters') || '[]');
@@ -341,11 +352,11 @@ function saveCharacter(name, fandom, nickname, pic) {
         console.error(e);
     }
 }
-
+*/
 function editCharacter(index) {
     alert('Edit functionality will be implemented. For now, please delete and recreate the character.');
 }
-
+/*
 function deleteCharacter(index) {
     if (!confirm('Are you sure you want to delete this character? This action cannot be undone.')) {
         return;
@@ -366,7 +377,7 @@ function deleteCharacter(index) {
         console.error(e);
     }
 }
-
+*/
 function addPost() {
     const container = document.getElementById('posts-container');
     if (!container) return;
@@ -471,6 +482,10 @@ function closePreview() {
         modal.classList.add('hidden');
     }
 }
+function getThreadIdFromPath() {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1];
+}
 
 function saveForum(status) {
     const titleInput = document.getElementById('forum-title');
@@ -534,7 +549,7 @@ function saveForum(status) {
         alert('Please add at least one post!');
         return;
     }
-    
+    /*
     try {
         let forums = JSON.parse(localStorage.getItem('forums') || '[]');
         const editingForumId = sessionStorage.getItem('editingForumId');
@@ -611,9 +626,43 @@ function saveForum(status) {
         alert('Error saving forum: ' + e.message);
         console.error(e);
     }
+    */
+   // use backend API to save forum instead of localStorage
+    const editingForumId = sessionStorage.getItem('editingForumId') || null;
+
+    const payload = {
+        id: editingForumId, 
+        title: title,
+        status: status || 'draft',
+        posts: posts
+    };
+
+    fetch('/createforum', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.ok) {
+            alert('Error saving forum: ' + (data.error || 'Unknown error'));
+            return;
+        }
+        // clear editing state
+        sessionStorage.removeItem('editingForumId');
+        window.location.href = `/viewthread/${data.id}`;
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Network error saving forum');
+    });
+
 }
 
 function loadForumForEdit(forumId) {
+    /*
     const forums = JSON.parse(localStorage.getItem('forums') || '[]');
     const forum = forums.find(f => f.id === forumId);
     
@@ -622,101 +671,121 @@ function loadForumForEdit(forumId) {
         window.location.href = '/forum';
         return;
     }
-    
-    document.querySelector('.auth-box-header h2').textContent = 'Edit Forum';
-    document.querySelector('.auth-box-header p').textContent = 'Edit your forum dialogue';
-    
-    document.getElementById('forum-title').value = forum.title;
-    
-    loadCharacters();
-    
-    setTimeout(() => {
-        if (forum.posts && forum.posts.length > 0) {
-            const charIndices = new Set();
-            forum.posts.forEach(post => {
-                if (post.characterIndex !== undefined) {
-                    charIndices.add(post.characterIndex);
-                }
-            });
-            
-            selectedCharacters = Array.from(charIndices);
-            updateSelectedTags();
-            
-            const postsContainer = document.getElementById('posts-container');
-            postsContainer.innerHTML = '';
-            
-            forum.posts.forEach((post, index) => {
-                const character = characters[post.characterIndex];
-                if (!character) return;
-                
-                const postItem = document.createElement('div');
-                postItem.className = 'post-editor-item';
-                
-                const header = document.createElement('div');
-                header.className = 'post-editor-header';
-                
-                const selectWrapper = document.createElement('div');
-                selectWrapper.className = 'character-select-wrapper';
-                
-                const select = document.createElement('select');
-                select.className = 'character-select';
-                select.required = true;
-                select.innerHTML = '<option value="">Select Character</option>';
-                select.value = post.characterIndex;
-                select.addEventListener('change', function() {
-                    toggleCharacterSettings(this);
-                });
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'btn-remove-post';
-                removeBtn.textContent = 'Remove';
-                removeBtn.addEventListener('click', function() {
-                    removePost(removeBtn);
-                });
-                
-                const charSettings = document.createElement('div');
-                charSettings.className = 'character-settings active';
-                
-                const nicknameRow = document.createElement('div');
-                nicknameRow.className = 'character-setting-row';
-                nicknameRow.innerHTML = `
-                    <label>Nickname:</label>
-                    <input type="text" class="character-nickname-input" placeholder="Forum username for this character" value="${escapeHtml(post.nickname || character.nickname)}">
-                `;
-                
-                const avatarRow = document.createElement('div');
-                avatarRow.className = 'character-setting-row';
-                avatarRow.innerHTML = `
-                    <label>Avatar:</label>
-                    <input type="file" class="character-avatar-input" accept="image/*">
-                `;
-                
-                charSettings.appendChild(nicknameRow);
-                charSettings.appendChild(avatarRow);
-                
-                selectWrapper.appendChild(select);
-                header.appendChild(selectWrapper);
-                header.appendChild(removeBtn);
-                postItem.appendChild(header);
-                postItem.appendChild(charSettings);
-                
-                const textarea = document.createElement('textarea');
-                textarea.className = 'post-content-input';
-                textarea.rows = 4;
-                textarea.placeholder = 'Enter post content...';
-                textarea.required = true;
-                textarea.value = post.content || '';
-                
-                postItem.appendChild(textarea);
-                postsContainer.appendChild(postItem);
-                
-                updateCharacterSelects();
-            });
-        }
+    */
+    // use backend API to load forum instead of localStorage
+    fetch(`/api/my_forums/${forumId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                alert(data.error || 'Error loading forum for edit');
+                window.location.href = '/forum';
+                return;
+            }
+
+            const forum = data.thread;
+
+        document.querySelector('.auth-box-header h2').textContent = 'Edit Forum';
+        document.querySelector('.auth-box-header p').textContent = 'Edit your forum dialogue';
         
-        sessionStorage.setItem('editingForumId', forumId);
-    }, 200);
+        document.getElementById('forum-title').value = forum.title || '';
+        
+        loadCharacters();
+    
+        setTimeout(() => {
+            if (forum.posts && forum.posts.length > 0) {
+                const charIndices = new Set();
+                forum.posts.forEach(post => {
+                    if (post.characterIndex !== undefined) {
+                        charIndices.add(post.characterIndex);
+                    }
+                });
+                
+                selectedCharacters = Array.from(charIndices);
+                updateSelectedTags();
+                
+                const postsContainer = document.getElementById('posts-container');
+                postsContainer.innerHTML = '';
+                
+                forum.posts.forEach((post, index) => {
+                    const character = characters[post.characterIndex];
+                    if (!character) return;
+                    
+                    const postItem = document.createElement('div');
+                    postItem.className = 'post-editor-item';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'post-editor-header';
+                    
+                    const selectWrapper = document.createElement('div');
+                    selectWrapper.className = 'character-select-wrapper';
+                    
+                    const select = document.createElement('select');
+                    select.className = 'character-select';
+                    select.required = true;
+                    select.innerHTML = '<option value="">Select Character</option>';
+                    select.value = post.characterIndex;
+                    select.addEventListener('change', function() {
+                        toggleCharacterSettings(this);
+                    });
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'btn-remove-post';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.addEventListener('click', function() {
+                        removePost(removeBtn);
+                    });
+                    
+                    const charSettings = document.createElement('div');
+                    charSettings.className = 'character-settings active';
+                    
+                    const nicknameRow = document.createElement('div');
+                    nicknameRow.className = 'character-setting-row';
+                    nicknameRow.innerHTML = `
+                        <label>Nickname:</label>
+                        <input type="text" class="character-nickname-input" 
+                        placeholder="Forum username for this character" 
+                        value="${escapeHtml(post.nickname || character.nickname)}">
+                    `;
+                    
+                    const avatarRow = document.createElement('div');
+                    avatarRow.className = 'character-setting-row';
+                    avatarRow.innerHTML = `
+                        <label>Avatar:</label>
+                        <input type="file" class="character-avatar-input" accept="image/*">
+                    `;
+                    
+                    charSettings.appendChild(nicknameRow);
+                    charSettings.appendChild(avatarRow);
+                    
+                    selectWrapper.appendChild(select);
+                    header.appendChild(selectWrapper);
+                    header.appendChild(removeBtn);
+                    postItem.appendChild(header);
+                    postItem.appendChild(charSettings);
+                    
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'post-content-input';
+                    textarea.rows = 4;
+                    textarea.placeholder = 'Enter post content...';
+                    textarea.required = true;
+                    textarea.value = post.content || '';
+                    
+                    postItem.appendChild(textarea);
+                    postsContainer.appendChild(postItem);
+                    
+                    updateCharacterSelects();
+                });
+            }
+            
+            sessionStorage.setItem('editingForumId', forumId);
+        }, 200);
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Network error loading forum for edit');
+        window.location.href = '/forum';
+    });
 }
 
 function editForum(forumId) {
@@ -725,6 +794,7 @@ function editForum(forumId) {
 }
 
 function initIndex() {
+    /*
     const forums = JSON.parse(localStorage.getItem('forums') || '[]');
     const characters = JSON.parse(localStorage.getItem('characters') || '[]');
     
@@ -778,9 +848,141 @@ function initIndex() {
             publishedList.appendChild(forumItem);
         });
     }
+    */
+    // use backend API to load index data instead of localStorage
+    fetch('/api/my_forums')
+        .then(res => {
+            return res.json().catch(() => null);
+        })
+        .then(data => {
+            if (!data || !data.ok) {
+                console.warn('Unable to load /api/my_forums or not logged in');
+                return;
+            }
+
+            const forums = data.forums || [];
+
+            const totalForumsEl = document.getElementById('total-forums');
+            const forumCountEl  = document.getElementById('forum-count');
+            const totalPostsEl  = document.getElementById('total-posts');
+            const forumsList    = document.getElementById('forums-list');
+
+            // numbers / counters
+            if (totalForumsEl) totalForumsEl.textContent = forums.length;
+            if (forumCountEl)  forumCountEl.textContent  = forums.length;
+
+            let totalPosts = 0;
+            forums.forEach(f => {
+                totalPosts += f.post_count || 0;
+            });
+            if (totalPostsEl) totalPostsEl.textContent = totalPosts;
+
+            // list of latest forums
+            if (!forumsList) return;
+
+            forumsList.innerHTML = '';
+
+            if (!forums.length) {
+                forumsList.innerHTML = `
+                    <div class="empty-message">
+                        No forums created yet.
+                        <a href="/createforum">Create your first forum</a> to get started!
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by updated_at or created_at descending
+            const sorted = forums.slice().sort((a, b) => {
+                const da = new Date(a.updated_at || a.created_at || 0);
+                const db = new Date(b.updated_at || b.created_at || 0);
+                return db - da;
+            });
+
+            sorted.forEach(forum => {
+                const forumItem = document.createElement('div');
+                forumItem.className = 'latest-post';
+
+                const postCount   = forum.post_count || 0;
+                const status      = forum.status || 'draft';
+                const statusText  = status === 'published' ? 'Published' : 'Draft';
+                const dateStr     = forum.created_at || forum.updated_at || '';
+                const createdDate = dateStr ? new Date(dateStr).toLocaleDateString() : '';
+
+                forumItem.innerHTML = `
+                    <a href="/viewthread/${forum.id}">${escapeHtml(forum.title || 'Untitled')}</a>
+                    <span class="post-meta">
+                        ${postCount} posts | ${statusText} | Created ${createdDate}
+                    </span>
+                `;
+                forumsList.appendChild(forumItem);
+            });
+        })
+        .catch(err => {
+            console.error('Error loading /api/my_forums:', err);
+        });
+    //"Community" section – uses /api/published_forums
+    fetch('/api/published_forums')
+        .then(res => res.json())
+        .then(data => {
+            if (!data || !data.ok) {
+                console.warn('Unable to load /api/published_forums');
+                return;
+            }
+
+            const publishedForums = data.forums || [];
+
+            const publishedCountEl = document.getElementById('published-count');
+            const publishedList    = document.getElementById('published-list');
+
+            if (publishedCountEl) {
+                publishedCountEl.textContent = publishedForums.length;
+            }
+
+            if (!publishedList) return;
+
+            publishedList.innerHTML = '';
+
+            if (!publishedForums.length) {
+                publishedList.innerHTML = `
+                    <div class="empty-message">
+                        No published forums yet. Be the first to publish a forum!
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by published_at (fallback: created_at) descending and show top 5
+            const sorted = publishedForums.slice().sort((a, b) => {
+                const da = new Date(a.published_at || a.created_at || 0);
+                const db = new Date(b.published_at || b.created_at || 0);
+                return db - da;
+            }).slice(0, 5);
+
+            sorted.forEach(forum => {
+                const forumItem = document.createElement('div');
+                forumItem.className = 'latest-post';
+
+                const postCount     = forum.post_count || 0;
+                const dateStr       = forum.published_at || forum.created_at || '';
+                const publishedDate = dateStr ? new Date(dateStr).toLocaleDateString() : '';
+
+                forumItem.innerHTML = `
+                    <a href="/viewthread/${forum.id}">${escapeHtml(forum.title || 'Untitled')}</a>
+                    <span class="post-meta">
+                        ${postCount} posts | Published ${publishedDate}
+                    </span>
+                `;
+                publishedList.appendChild(forumItem);
+            });
+        })
+        .catch(err => {
+            console.error('Error loading /api/published_forums:', err);
+        });
 }
 
 function loadForums() {
+    /*
     allForums = JSON.parse(localStorage.getItem('forums') || '[]');
     const characters = JSON.parse(localStorage.getItem('characters') || '[]');
     
@@ -799,6 +1001,23 @@ function loadForums() {
     
     const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
     filterForums(currentFilter, activeTab);
+    */
+    // use backend API to load forums instead of localStorage
+    fetch('/api/my_forums')
+    .then(res => res.json())
+    .then(data => {
+        if (!data.ok) {
+            alert('Error loading forums: ' + (data.error || 'Unknown error'));
+            return;
+        }
+        allForums = data.forums || [];
+        const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
+        filterForums(currentFilter, activeTab);
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Network error loading forums');
+    });
 }
 
 function filterForums(filter, targetElement) {
@@ -818,10 +1037,10 @@ function filterForums(filter, targetElement) {
         filteredForums = allForums.filter(f => f.status === 'published');
     }
     
-    const characters = JSON.parse(localStorage.getItem('characters') || '[]');
+    // const characters = JSON.parse(localStorage.getItem('characters') || '[]');
     const tbody = document.getElementById('forums-table-body');
     
-    if (filteredForums.length === 0) {
+    if (!filteredForums.length) {
         const message = filter === 'all' 
             ? 'No forums created yet. <a href="/createforum">Create your first forum</a> to get started!'
             : filter === 'draft'
@@ -840,6 +1059,7 @@ function filterForums(filter, targetElement) {
     
     tbody.innerHTML = '';
     filteredForums.reverse().forEach(forum => {
+        /*
         const postCount = forum.posts ? forum.posts.length : 0;
         const createdDate = new Date(forum.createdAt).toLocaleDateString();
         const status = forum.status || 'draft';
@@ -856,8 +1076,11 @@ function filterForums(filter, targetElement) {
             const char = characters[idx];
             return char ? char.name : 'Unknown';
         }).join(', ') || 'N/A';
-        
-        const statusBadge = status === 'published' 
+        */
+       const createdDate = forum.created_at 
+            ? new Date(forum.created_at).toLocaleDateString()
+            : '';
+        const statusBadge = forum.status === 'published' 
             ? '<span class="status-badge published">Published</span>'
             : '<span class="status-badge draft">Draft</span>';
         
@@ -866,10 +1089,10 @@ function filterForums(filter, targetElement) {
         row.innerHTML = `
             <td class="col-icon">📁</td>
             <td class="col-title">
-                <a href="/viewthread?id=${forum.id}">${escapeHtml(forum.title)}</a>
+                <a href="/viewthread/${forum.id}">${escapeHtml(forum.title)}</a>
             </td>
-            <td class="col-author">${escapeHtml(charNames)}</td>
-            <td class="col-replies">${postCount}</td>
+            <td class="col-author">N/A</td>
+            <td class="col-replies">${forum.post_count}</td>
             <td class="col-status">${statusBadge}</td>
             <td class="col-last">
                 <div>${createdDate}</div>
@@ -897,60 +1120,73 @@ function initForum() {
 }
 
 function loadPublishedForums() {
+    /*
     const allForums = JSON.parse(localStorage.getItem('forums') || '[]');
     const publishedForums = allForums.filter(f => f.status === 'published');
     const characters = JSON.parse(localStorage.getItem('characters') || '[]');
-    
-    document.getElementById('published-count').textContent = publishedForums.length;
-    document.getElementById('pagination-info').textContent = `${publishedForums.length} forum${publishedForums.length !== 1 ? 's' : ''}`;
-    
-    const tbody = document.getElementById('forums-table-body');
-    if (publishedForums.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="empty-table-cell">
-                    No published forums yet. Be the first to publish a forum!
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = '';
-    publishedForums.reverse().forEach(forum => {
-        const postCount = forum.posts ? forum.posts.length : 0;
-        const publishedDate = forum.publishedAt 
-            ? new Date(forum.publishedAt).toLocaleDateString()
-            : new Date(forum.createdAt).toLocaleDateString();
+    */
+    // use backend API to load published forums instead of localStorage
+    fetch('/api/published_forums')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                console.error(data.error || 'Failed to load community threads');
+                return;
+            }
+            const publishedForums = data.forums || [];
+            document.getElementById('published-count').textContent = publishedForums.length;
+            document.getElementById('pagination-info').textContent = `${publishedForums.length} forum${publishedForums.length !== 1 ? 's' : ''}`;
+            
+            const tbody = document.getElementById('forums-table-body');
+            if (!publishedForums.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-table-cell">
+                            No published forums yet. Be the first to publish a forum!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
         
-        const charIndices = new Set();
-        if (forum.posts) {
-            forum.posts.forEach(post => {
-                if (post.characterIndex !== undefined) {
-                    charIndices.add(post.characterIndex);
+            tbody.innerHTML = '';
+            publishedForums.reverse().forEach(forum => {
+                /*
+                const postCount = forum.posts ? forum.posts.length : 0;
+                const publishedDate = forum.publishedAt 
+                    ? new Date(forum.publishedAt).toLocaleDateString()
+                    : new Date(forum.createdAt).toLocaleDateString();
+                
+                const charIndices = new Set();
+                if (forum.posts) {
+                    forum.posts.forEach(post => {
+                        if (post.characterIndex !== undefined) {
+                            charIndices.add(post.characterIndex);
+                        }
+                    });
                 }
+                const charNames = Array.from(charIndices).map(idx => {
+                    const char = characters[idx];
+                    return char ? char.name : 'Unknown';
+                }).join(', ') || 'N/A';
+                */
+                const dataStr = forum.published_at || forum.created_at || '';
+                const row = document.createElement('tr');
+                row.className = 'thread-row';
+                row.innerHTML = `
+                    <td class="col-icon">📁</td>
+                    <td class="col-title">
+                        <a href="/viewthread?id=${forum.id}">${escapeHtml(forum.title)}</a>
+                    </td>
+                    <td class="col-author">${escapeHtml(charNames)}</td>
+                    <td class="col-replies">${postCount}</td>
+                    <td class="col-last">
+                        <div>${publishedDate}</div>
+                    </td>
+                `;
+                tbody.appendChild(row);
             });
-        }
-        const charNames = Array.from(charIndices).map(idx => {
-            const char = characters[idx];
-            return char ? char.name : 'Unknown';
-        }).join(', ') || 'N/A';
-        
-        const row = document.createElement('tr');
-        row.className = 'thread-row';
-        row.innerHTML = `
-            <td class="col-icon">📁</td>
-            <td class="col-title">
-                <a href="/viewthread?id=${forum.id}">${escapeHtml(forum.title)}</a>
-            </td>
-            <td class="col-author">${escapeHtml(charNames)}</td>
-            <td class="col-replies">${postCount}</td>
-            <td class="col-last">
-                <div>${publishedDate}</div>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
+        });
 }
 
 function initCommunity() {
@@ -958,6 +1194,7 @@ function initCommunity() {
 }
 
 function initViewThread() {
+    /*
     const urlParams = new URLSearchParams(window.location.search);
     const forumId = urlParams.get('id');
     
@@ -1080,8 +1317,97 @@ function initViewThread() {
     if (breadcrumbSpan) {
         breadcrumbSpan.textContent = forum.title;
     }
+    */
+   const threadId = getThreadIdFromPath();
+    if (!threadId) {
+        document.getElementById('posts-container').innerHTML =
+            '<div style="text-align: center; padding: 40px; color: #999;">No thread ID provided.</div>';
+        return;
+    }
+
+    fetch(`/api/thread/${threadId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                document.getElementById('posts-container').innerHTML =
+                    `<div style="text-align: center; padding: 40px; color: #999;">${escapeHtml(data.error || 'Unable to load thread.')}</div>`;
+                return;
+            }
+
+            renderThread(data.thread);
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('posts-container').innerHTML =
+                '<div style="text-align: center; padding: 40px; color: #999;">Error loading thread.</div>';
+        });
 }
 
+function renderThread(thread) {
+    // Update title and counts
+    document.getElementById('thread-title').textContent = thread.title || 'Untitled Thread';
+    document.getElementById('thread-replies').textContent = thread.posts.length - 1;
+    document.getElementById('thread-views').textContent = Math.floor(Math.random() * 500) + 100;
+
+    // Update breadcrumbs last item
+    const breadcrumbSpan = document.querySelector('.breadcrumbs span:last-child');
+    if (breadcrumbSpan) {
+        breadcrumbSpan.textContent = thread.title;
+    }
+
+    const postsContainer = document.getElementById('posts-container');
+    postsContainer.innerHTML = '';
+
+    if (!thread.posts.length) {
+        postsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #999;">
+                No posts in this thread.
+            </div>`;
+        return;
+    }
+
+    thread.posts.forEach((post, index) => {
+        const isOP = index === 0;
+
+        const postItem = document.createElement('div');
+        postItem.className = 'post-item';
+        postItem.dataset.floor = post.floor;
+
+        const sidebar = document.createElement('div');
+        sidebar.className = 'post-sidebar';
+        sidebar.innerHTML = `
+            <div class="user-avatar">
+                <img src="${post.avatar || 'https://via.placeholder.com/80'}" alt="">
+            </div>
+            <div class="user-name">${escapeHtml(post.nickname || "Unknown")}</div>
+            <div class="user-stats">
+                <div>Floor: ${post.floor}</div>
+            </div>
+        `;
+
+        const contentArea = document.createElement('div');
+        contentArea.className = 'post-content-area';
+        contentArea.innerHTML = `
+            <div class="post-header">
+                <span class="post-number">${post.floor}#</span>
+                ${isOP ? '<span class="post-author-label">Original Poster</span>' : ''}
+                <span class="post-time">${new Date(thread.created_at).toLocaleString()}</span>
+            </div>
+            <div class="post-body">
+                ${escapeHtml(post.content).replace(/\n/g, '<br>')}
+            </div>
+            <div class="post-footer">
+                <button class="post-action">👍 Like</button>
+                <a href="#" class="post-action">Reply</a>
+            </div>
+        `;
+
+        postItem.appendChild(sidebar);
+        postItem.appendChild(contentArea);
+        postsContainer.appendChild(postItem);
+    });
+}
+/*
 function initCharactersList() {
     const characters = JSON.parse(localStorage.getItem('characters') || '[]');
     const charactersList = document.getElementById('characters-list');
@@ -1139,12 +1465,12 @@ function initCharactersList() {
         charactersList.appendChild(characterCard);
     });
 }
-
+*/
 function initCreateForum() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const editId = urlParams.get('edit');
-        
+        loadCharacters();
         if (editId) {
             loadForumForEdit(editId);
         } else {
@@ -1161,7 +1487,7 @@ function initCreateForum() {
         if (closePreviewBtn) {
             closePreviewBtn.addEventListener('click', closePreview);
         }
-        
+        /*
         const form = document.getElementById('create-forum-form');
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -1169,7 +1495,7 @@ function initCreateForum() {
                 saveForum('draft');
             });
         }
-        
+        */
         const saveDraftBtn = document.getElementById('save-draft-btn');
         if (saveDraftBtn) {
             saveDraftBtn.addEventListener('click', function(e) {
@@ -1229,7 +1555,7 @@ function initAddCharacter() {
             }
         });
     }
-    
+    /*
     const form = document.getElementById('add-character-form');
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -1262,6 +1588,7 @@ function initAddCharacter() {
             }
         });
     }
+    */
 }
 
 function initRegister() {
@@ -1283,7 +1610,7 @@ function initRegister() {
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     
-    initExampleData();
+    // initExampleData();
     
     if (document.getElementById('create-forum-form')) {
         initCreateForum();
@@ -1301,7 +1628,9 @@ document.addEventListener('DOMContentLoaded', function() {
         initAddCharacter();
     } else if (document.getElementById('posts-container') && document.getElementById('thread-title')) {
         initViewThread();
+    /*
     } else if (document.getElementById('characters-list')) {
         initCharactersList();
+    */
     }
 });

@@ -1,17 +1,30 @@
 import os
 from bson import ObjectId
-from flask import Flask, redirect, render_template, request, url_for, flash
+from bson.errors import InvalidId
+from json import JSONEncoder
+import json
+from flask import Flask, redirect, render_template, request, url_for, flash,jsonify
 from pymongo import MongoClient
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from models import User
 from dotenv import load_dotenv
+from datetime import datetime
 load_dotenv()
 
 login_manager = LoginManager()
+class MongoJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        # Handle datetime objects (optional, but good practice)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 def create_app():
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.secret_key = os.getenv("SECRET_KEY")
+    app.json_encoder = MongoJSONEncoder
     login_manager.init_app(app)
     login_manager.login_view = "login" 
 
@@ -84,6 +97,8 @@ def create_app():
                 "username": username,
                 "email": email,
                 "password": password,
+                "characters": [],
+                "threads": [],
             })
             doc = app.db.users.insert_one(new_user)
 
@@ -104,25 +119,201 @@ def create_app():
     def forum():
         return render_template("forum.html")
     
-    @app.route("/viewthread")
-    def viewthread():
+    @app.route("/viewthread/<thread_id>")
+    def viewthread(thread_id):
         return render_template("viewthread.html")
     
-    @app.route("/createforum")
-    def createforum():
-        return render_template("createforum.html")
+    @app.route("/api/thread/<thread_id>")
+    def get_thread(thread_id):
+        try:
+            thread_oid = ObjectId(thread_id)
+        except InvalidId:
+            return jsonify({"ok": False, "error": "Invalid thread id"}), 400
+        
+        thread = app.db.forums.find_one({"_id": thread_oid})
+        if not thread:
+            return jsonify({"ok": False, "error": "Thread not found"}), 404
+        
+        status = thread.get("status", "draft")
+        owner = thread.get("user_id")
+        
+        if status != "published":
+            if not current_user.is_authenticated or owner != ObjectId(current_user.id):
+                return jsonify({"ok": False, "error": "Thread not visible to you"}), 403
+        
+        thread_data = {
+            "id": str(thread.get("_id")),
+            "title": thread.get("title", ""),
+            "status": status,
+            "posts": thread.get("posts", []),
+            "updated_at": thread.get("updated_at").isoformat() if thread.get("updated_at") else None,
+            "created_at": thread.get("created_at").isoformat() if thread.get("created_at") else None,
+        }
+        
+        return jsonify({"ok": True, "thread": thread_data})
     
+    #character routes
+    @app.route("/characters")
+    @login_required
+    def characters():
+        user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+        characters = user.get("characters", [])
+        return render_template("characters.html", characters=characters)
+    
+    @app.route("/addcharacter", methods = ['GET', 'POST'])
+    @login_required
+    def addcharacter():
+        if request.method == 'GET':
+            return render_template("addcharacter.html")
+        name = request.form.get("name", "Uknown character")
+        nickname = request.form.get("nickname", name)
+        fandom = request.form.get("fandom", "Original character")
+        pic = request.form.get("pic", "/static/images/default.png")
+        character_id = ObjectId()
+        character = ({
+            "_id": character_id,
+            "name": name,
+            "nickname": nickname,
+            "fandom": fandom,
+            "pic": pic
+        })
+        app.db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$push": {"characters": character}}
+        )
+
+        return redirect(url_for("characters"))
+    
+    @app.route("/deletecharacter/<char_id>", methods=['POST'])
+    @login_required
+    def deletecharacter(char_id):
+        result = app.db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$pull": {"characters": {"_id": ObjectId(char_id)}}}
+        )
+        if result.modified_count == 0:
+            flash("Character not found or could not be deleted.")
+        else:
+            flash("Character deleted successfully.")
+        return redirect(url_for("characters"))
+        
+    
+    @app.route("/createforum", methods=['GET', 'POST'])
+    @login_required
+    def createforum():
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data:
+                return jsonify({"ok": False, "error": "Expected JSON body"}), 400
+            
+            title = (data.get("title", "Untitled")).strip()
+            status = data.get("status", "draft")
+            posts_data = data.get("posts", [])
+            thread_id = data.get("id")
+            if not title:
+                return jsonify({"ok": False, "error": "Title is required"}), 400
+            if not posts_data:
+                return jsonify({"ok": False, "error": "At least one post is required"}), 400
+            
+            now = datetime.utcnow()
+
+            thread = {
+                "user_id": ObjectId(current_user.id),
+                "title": title,
+                "status": status,
+                "posts": posts_data,
+                "updated_at": now,
+                "published_at": now if status == "published" else None,
+            }
+
+            if thread_id:
+                try:
+                    thread_oid = ObjectId(thread_id)
+                except Exception:
+                    return jsonify({"ok": False, "error": "Invalid thread id"}), 400
+                
+                result = app.db.forums.update_one(
+                    {"_id": thread_oid, "user_id": ObjectId(current_user.id)},
+                    {"$set": thread}
+                )
+                if result.matched_count == 0:
+                    return jsonify({"ok": False, "error": "Thread not found"}), 404
+                
+                return jsonify({"ok": True, "id": str(thread_oid)})
+            
+            thread["created_at"] = now
+            thread = app.db.forums.insert_one(thread)
+            app.db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$push": {"threads": thread.inserted_id}}
+            )
+            return jsonify({"ok": True, "id": str(thread.inserted_id)})
+                
+        else:
+            user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+            characters = user.get("characters", [])
+
+            # --- DEBUGGING LINES ---
+            print(f"DEBUG: Current User ID: {current_user.id}", flush=True)
+            print(f"DEBUG: Raw Characters found in DB: {len(characters)}", flush=True)
+            print(f"DEBUG: First character data: {characters[0] if characters else 'None'}", flush=True)
+
+            characters_json_string = json.dumps(characters, cls=app.json_encoder)
+            
+            app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
+
+            return render_template("createforum.html", characters=characters_json_string)
+    
+    @app.route("/api/my_forums")
+    @login_required
+    def my_forums():
+        cursor = app.db.forums.find({"user_id": ObjectId(current_user.id)}).sort("updated_at", -1)
+        forums = []
+        for doc in cursor:
+            forums.append({
+                "id": str(doc.get("_id")),
+                "title": doc.get("title", ""),
+                "status": doc.get("status", "draft"),
+                "post_count": len(doc.get("posts", [])),
+                "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+                "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
+            })
+        return jsonify({"ok": True, "forums": forums})
+    
+    @app.route("/api/published_forums")
+    def api_published_forums():
+        cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
+
+        forums = []
+        for t in cursor:
+            forums.append({
+                "id": str(t["_id"]),
+                "title": t.get("title", "Untitled"),
+                "post_count": len(t.get("posts", [])),
+                "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
+                "published_at": t.get("published_at").isoformat() if t.get("published_at") else None,
+            })
+
+        return jsonify({"ok": True, "forums": forums})
     @app.route("/community")
     def community():
         return render_template("community.html")
     
-    @app.route("/addcharacter")
-    def addcharacter():
-        return render_template("addcharacter.html")
+    @app.route("/api/community")
+    def api_community():
+        cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
+        forums = []
+        for doc in cursor:
+            forums.append({
+                "id": str(doc.get("_id")),
+                "title": doc.get("title", ""),
+                "status": doc.get("status", "draft"),
+                "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+                "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
+            })
+        return jsonify({"ok": True, "forums": forums})
     
-    @app.route("/characters")
-    def characters():
-        return render_template("characters.html")
+
         
     return app
 

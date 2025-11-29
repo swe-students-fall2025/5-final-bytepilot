@@ -72,3 +72,26 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_scripts %}
+<script>
+    window.WINDOW_CHARACTERS_DATA_STRING = '{{ characters_json | tojson | safe }}';
+    
+    // Now we parse this clean string.
+    try {
+        window.WINDOW_CHARACTERS_DATA = JSON.parse(window.WINDOW_CHARACTERS_DATA_STRING);
+    } catch (e) {
+        console.error("Failed to parse characters data in template:", e);
+        window.WINDOW_CHARACTERS_DATA = [];
+    }
+</script>
+
+<script>
+    const dataElement = document.getElementById('characters-data');
+    window.INIT_CHARACTERS = JSON.parse(dataElement.textContent);
+    
+    console.log('DEBUG INIT_CHARACTERS:', window.INIT_CHARACTERS);
+</script>
+
+<script src="{{ url_for('static', filename='js/frontend.js') }}"></script>
+{% endblock %}
