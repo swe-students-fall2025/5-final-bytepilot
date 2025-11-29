@@ -1,5 +1,8 @@
 import os
 from bson import ObjectId
+from bson.errors import InvalidId
+from json import JSONEncoder
+import json
 from flask import Flask, redirect, render_template, request, url_for, flash,jsonify
 from pymongo import MongoClient
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
@@ -9,10 +12,19 @@ from datetime import datetime
 load_dotenv()
 
 login_manager = LoginManager()
+class MongoJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        # Handle datetime objects (optional, but good practice)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 def create_app():
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.secret_key = os.getenv("SECRET_KEY")
+    app.json_encoder = MongoJSONEncoder
     login_manager.init_app(app)
     login_manager.login_view = "login" 
 
@@ -115,7 +127,7 @@ def create_app():
     def get_thread(thread_id):
         try:
             thread_oid = ObjectId(thread_id)
-        except Exception:
+        except InvalidId:
             return jsonify({"ok": False, "error": "Invalid thread id"}), 400
         
         thread = app.db.forums.find_one({"_id": thread_oid})
@@ -126,7 +138,7 @@ def create_app():
         owner = thread.get("user_id")
         
         if status != "published":
-            if not current_user.is_authenticated or owner != current_user.id:
+            if not current_user.is_authenticated or owner != ObjectId(current_user.id):
                 return jsonify({"ok": False, "error": "Thread not visible to you"}), 403
         
         thread_data = {
@@ -156,7 +168,7 @@ def create_app():
         name = request.form.get("name", "Uknown character")
         nickname = request.form.get("nickname", name)
         fandom = request.form.get("fandom", "Original character")
-        pic = request.form.get("pic", "default.png")
+        pic = request.form.get("pic", "/static/images/default.png")
         character_id = ObjectId()
         character = ({
             "_id": character_id,
@@ -183,7 +195,7 @@ def create_app():
             flash("Character not found or could not be deleted.")
         else:
             flash("Character deleted successfully.")
-        return redirect(url_for("characterlist"))
+        return redirect(url_for("characters"))
         
     
     @app.route("/createforum", methods=['GET', 'POST'])
@@ -240,11 +252,68 @@ def create_app():
         else:
             user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
             characters = user.get("characters", [])
-            return render_template("createforum.html", characters=characters)
+
+            # --- DEBUGGING LINES ---
+            print(f"DEBUG: Current User ID: {current_user.id}", flush=True)
+            print(f"DEBUG: Raw Characters found in DB: {len(characters)}", flush=True)
+            print(f"DEBUG: First character data: {characters[0] if characters else 'None'}", flush=True)
+
+            characters_json_string = json.dumps(characters, cls=app.json_encoder)
+            
+            app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
+
+            return render_template("createforum.html", characters=characters_json_string)
     
+    @app.route("/api/my_forums")
+    @login_required
+    def my_forums():
+        cursor = app.db.forums.find({"user_id": ObjectId(current_user.id)}).sort("updated_at", -1)
+        forums = []
+        for doc in cursor:
+            forums.append({
+                "id": str(doc.get("_id")),
+                "title": doc.get("title", ""),
+                "status": doc.get("status", "draft"),
+                "post_count": len(doc.get("posts", [])),
+                "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+                "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
+            })
+        return jsonify({"ok": True, "forums": forums})
+    
+    @app.route("/api/published_forums")
+    def api_published_forums():
+        cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
+
+        forums = []
+        for t in cursor:
+            forums.append({
+                "id": str(t["_id"]),
+                "title": t.get("title", "Untitled"),
+                "post_count": len(t.get("posts", [])),
+                "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
+                "published_at": t.get("published_at").isoformat() if t.get("published_at") else None,
+            })
+
+        return jsonify({"ok": True, "forums": forums})
     @app.route("/community")
     def community():
         return render_template("community.html")
+    
+    @app.route("/api/community")
+    def api_community():
+        cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
+        forums = []
+        for doc in cursor:
+            forums.append({
+                "id": str(doc.get("_id")),
+                "title": doc.get("title", ""),
+                "status": doc.get("status", "draft"),
+                "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+                "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
+            })
+        return jsonify({"ok": True, "forums": forums})
+    
+
         
     return app
 
