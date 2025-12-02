@@ -3,7 +3,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from json import JSONEncoder
 import json
-from flask import Flask, redirect, render_template, request, url_for, flash,jsonify
+from flask import Flask, redirect, render_template, request, url_for, flash, jsonify
 from pymongo import MongoClient
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from models import User
@@ -146,6 +146,7 @@ def create_app():
             "title": thread.get("title", ""),
             "status": status,
             "posts": thread.get("posts", []),
+            "characters": thread.get("characters", []),
             "updated_at": thread.get("updated_at").isoformat() if thread.get("updated_at") else None,
             "created_at": thread.get("created_at").isoformat() if thread.get("created_at") else None,
         }
@@ -217,11 +218,60 @@ def create_app():
             
             now = datetime.utcnow()
 
+            # Validate posts against user characters and build character snapshot
+            user_doc = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+            user_characters = user_doc.get("characters", []) if user_doc else []
+            if not user_characters:
+                return jsonify({"ok": False, "error": "You have no characters; add one first."}), 400
+
+            character_lookup = {str(c.get("_id")): c for c in user_characters}
+            sanitized_posts = []
+            unique_chars = {}
+            for idx, post in enumerate(posts_data):
+                char_index = post.get("characterIndex")
+                try:
+                    char_index = int(char_index)
+                except Exception:
+                    return jsonify({"ok": False, "error": f"Invalid character index in post {idx+1}"}), 400
+                if char_index < 0 or char_index >= len(user_characters):
+                    return jsonify({"ok": False, "error": f"Character index out of range in post {idx+1}"}), 400
+                char_info = user_characters[char_index]
+
+                nickname = (post.get("nickname") or char_info.get("nickname") or "").strip()
+                avatar = post.get("avatar") or char_info.get("pic") or "/static/images/default.png"
+                content = (post.get("content") or "").strip()
+                floor = post.get("floor") or (idx + 1)
+
+                if not content:
+                    return jsonify({"ok": False, "error": f"Content required for post {idx+1}"}), 400
+
+                sanitized_posts.append({
+                    "characterIndex": char_index,
+                    "character_id": str(char_info.get("_id")),
+                    "character_name": char_info.get("name", ""),
+                    "character_fandom": char_info.get("fandom", ""),
+                    "nickname": nickname,
+                    "avatar": avatar,
+                    "content": content,
+                    "floor": floor
+                })
+
+                char_key = str(char_info.get("_id"))
+                if char_key not in unique_chars:
+                    unique_chars[char_key] = {
+                        "_id": char_key,
+                        "name": char_info.get("name", ""),
+                        "nickname": char_info.get("nickname", ""),
+                        "fandom": char_info.get("fandom", ""),
+                        "pic": char_info.get("pic", "/static/images/default.png")
+                    }
+
             thread = {
                 "user_id": ObjectId(current_user.id),
                 "title": title,
                 "status": status,
-                "posts": posts_data,
+                "posts": sanitized_posts,
+                "characters": list(unique_chars.values()),
                 "updated_at": now,
                 "published_at": now if status == "published" else None,
             }
@@ -262,7 +312,7 @@ def create_app():
             
             app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
 
-            return render_template("createforum.html", characters=characters_json_string)
+            return render_template("createforum.html", characters=characters, characters_json=characters_json_string)
     
     @app.route("/api/my_forums")
     @login_required
@@ -275,10 +325,41 @@ def create_app():
                 "title": doc.get("title", ""),
                 "status": doc.get("status", "draft"),
                 "post_count": len(doc.get("posts", [])),
+                "characters": doc.get("characters", []),
                 "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })
         return jsonify({"ok": True, "forums": forums})
+    
+    @app.route("/api/my_forums/<thread_id>")
+    @login_required
+    def api_my_forum(thread_id):
+        try:
+            thread_oid = ObjectId(thread_id)
+        except InvalidId:
+            return jsonify({"ok": False, "error": "Invalid thread id"}), 400
+        
+        thread = app.db.forums.find_one({"_id": thread_oid, "user_id": ObjectId(current_user.id)})
+        if not thread:
+            return jsonify({"ok": False, "error": "Thread not found"}), 404
+        
+        thread_data = {
+            "id": str(thread.get("_id")),
+            "title": thread.get("title", ""),
+            "status": thread.get("status", "draft"),
+            "posts": thread.get("posts", []),
+            "characters": thread.get("characters", []),
+            "updated_at": thread.get("updated_at").isoformat() if thread.get("updated_at") else None,
+            "created_at": thread.get("created_at").isoformat() if thread.get("created_at") else None,
+        }
+        return jsonify({"ok": True, "thread": thread_data})
+
+    @app.route("/api/my_characters")
+    @login_required
+    def api_my_characters():
+        user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+        characters = user.get("characters", [])
+        return jsonify({"ok": True, "characters": characters})
     
     @app.route("/api/published_forums")
     def api_published_forums():
@@ -290,6 +371,7 @@ def create_app():
                 "id": str(t["_id"]),
                 "title": t.get("title", "Untitled"),
                 "post_count": len(t.get("posts", [])),
+                "characters": t.get("characters", []),
                 "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
                 "published_at": t.get("published_at").isoformat() if t.get("published_at") else None,
             })
@@ -308,6 +390,7 @@ def create_app():
                 "id": str(doc.get("_id")),
                 "title": doc.get("title", ""),
                 "status": doc.get("status", "draft"),
+                "characters": doc.get("characters", []),
                 "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })

@@ -120,12 +120,35 @@ function loadCharacters() {
     */
     if (Array.isArray(window.WINDOW_CHARACTERS_DATA)) {
         characters = window.WINDOW_CHARACTERS_DATA;
+    } else if (window.INIT_CHARACTERS) {
+        characters = window.INIT_CHARACTERS;
     } else {
         characters = [];
     }
 
+    // fallback to API if nothing came through templating
+    if (!characters.length) {
+        fetch('/api/my_characters')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.ok) {
+                    characters = data.characters || [];
+                }
+            })
+            .catch(() => {
+                characters = [];
+            })
+            .finally(() => {
+                wireCharacterSearch();
+            });
+    } else {
+        wireCharacterSearch();
+    }
+
     console.log('loadCharacters → characters =', characters);
-    
+}
+
+function wireCharacterSearch() {
     const searchInput = document.getElementById('character-search-input');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -1083,6 +1106,7 @@ function filterForums(filter, targetElement) {
         const statusBadge = forum.status === 'published' 
             ? '<span class="status-badge published">Published</span>'
             : '<span class="status-badge draft">Draft</span>';
+        const charNames = (forum.characters || []).map(c => c.name).join(', ') || 'N/A';
         
         const row = document.createElement('tr');
         row.className = 'thread-row';
@@ -1091,7 +1115,7 @@ function filterForums(filter, targetElement) {
             <td class="col-title">
                 <a href="/viewthread/${forum.id}">${escapeHtml(forum.title)}</a>
             </td>
-            <td class="col-author">N/A</td>
+            <td class="col-author">${escapeHtml(charNames)}</td>
             <td class="col-replies">${forum.post_count}</td>
             <td class="col-status">${statusBadge}</td>
             <td class="col-last">
@@ -1170,13 +1194,21 @@ function loadPublishedForums() {
                     return char ? char.name : 'Unknown';
                 }).join(', ') || 'N/A';
                 */
-                const dataStr = forum.published_at || forum.created_at || '';
+                const postCount = forum.post_count || 0;
+                const publishedDate = forum.published_at 
+                    ? new Date(forum.published_at).toLocaleDateString()
+                    : forum.created_at
+                        ? new Date(forum.created_at).toLocaleDateString()
+                        : '';
+                const charNames = forum.characters 
+                    ? forum.characters.map(c => c.name).join(', ')
+                    : 'N/A';
                 const row = document.createElement('tr');
                 row.className = 'thread-row';
                 row.innerHTML = `
                     <td class="col-icon">📁</td>
                     <td class="col-title">
-                        <a href="/viewthread?id=${forum.id}">${escapeHtml(forum.title)}</a>
+                        <a href="/viewthread/${forum.id}">${escapeHtml(forum.title)}</a>
                     </td>
                     <td class="col-author">${escapeHtml(charNames)}</td>
                     <td class="col-replies">${postCount}</td>
