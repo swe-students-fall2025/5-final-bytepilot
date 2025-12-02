@@ -1106,6 +1106,7 @@ function filterForums(filter, targetElement) {
         const statusBadge = forum.status === 'published' 
             ? '<span class="status-badge published">Published</span>'
             : '<span class="status-badge draft">Draft</span>';
+        const charNames = (forum.characters || []).map(c => c.name).join(', ') || 'N/A';
         
         const row = document.createElement('tr');
         row.className = 'thread-row';
@@ -1114,7 +1115,7 @@ function filterForums(filter, targetElement) {
             <td class="col-title">
                 <a href="/viewthread/${forum.id}">${escapeHtml(forum.title)}</a>
             </td>
-            <td class="col-author">N/A</td>
+            <td class="col-author">${escapeHtml(charNames)}</td>
             <td class="col-replies">${forum.post_count}</td>
             <td class="col-status">${statusBadge}</td>
             <td class="col-last">
