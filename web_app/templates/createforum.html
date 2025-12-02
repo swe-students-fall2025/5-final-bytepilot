@@ -73,7 +73,11 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
+<script type="application/json" id="characters-data">
+{{ characters_json | safe }}
+</script>
+
 <script>
     window.WINDOW_CHARACTERS_DATA_STRING = '{{ characters_json | tojson | safe }}';
     
@@ -88,7 +92,7 @@
 
 <script>
     const dataElement = document.getElementById('characters-data');
-    window.INIT_CHARACTERS = JSON.parse(dataElement.textContent);
+    window.INIT_CHARACTERS = dataElement ? JSON.parse(dataElement.textContent) : [];
     
     console.log('DEBUG INIT_CHARACTERS:', window.INIT_CHARACTERS);
 </script>

@@ -3,7 +3,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from json import JSONEncoder
 import json
-from flask import Flask, redirect, render_template, request, url_for, flash,jsonify
+from flask import Flask, redirect, render_template, request, url_for, flash, jsonify
 from pymongo import MongoClient
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from models import User
@@ -262,7 +262,7 @@ def create_app():
             
             app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
 
-            return render_template("createforum.html", characters=characters_json_string)
+            return render_template("createforum.html", characters=characters, characters_json=characters_json_string)
     
     @app.route("/api/my_forums")
     @login_required
@@ -279,6 +279,35 @@ def create_app():
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })
         return jsonify({"ok": True, "forums": forums})
+    
+    @app.route("/api/my_forums/<thread_id>")
+    @login_required
+    def api_my_forum(thread_id):
+        try:
+            thread_oid = ObjectId(thread_id)
+        except InvalidId:
+            return jsonify({"ok": False, "error": "Invalid thread id"}), 400
+        
+        thread = app.db.forums.find_one({"_id": thread_oid, "user_id": ObjectId(current_user.id)})
+        if not thread:
+            return jsonify({"ok": False, "error": "Thread not found"}), 404
+        
+        thread_data = {
+            "id": str(thread.get("_id")),
+            "title": thread.get("title", ""),
+            "status": thread.get("status", "draft"),
+            "posts": thread.get("posts", []),
+            "updated_at": thread.get("updated_at").isoformat() if thread.get("updated_at") else None,
+            "created_at": thread.get("created_at").isoformat() if thread.get("created_at") else None,
+        }
+        return jsonify({"ok": True, "thread": thread_data})
+
+    @app.route("/api/my_characters")
+    @login_required
+    def api_my_characters():
+        user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+        characters = user.get("characters", [])
+        return jsonify({"ok": True, "characters": characters})
     
     @app.route("/api/published_forums")
     def api_published_forums():
