@@ -53,7 +53,7 @@ The MongoDB database will be automatically seeded with sample character data upo
 ## Tests & Coverage
 
 ```bash
-cd web-app
+cd web_app
 pip install -r requirements.txt
 pytest --cov=app --cov-report=term-missing
 ```
