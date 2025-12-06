@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Create Forum - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; 
+    <a href="{{ url_for('forum') }}">Forum</a> &gt; 
+    <span>Create Forum</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page-container wide">
+    <div class="auth-box-forum">
+        <div class="auth-box-header">
+            <h2>Create New Forum</h2>
+            <p>Generate fan fiction dialogues with forum styling</p>
+        </div>
+        
+        <form class="auth-form-forum" id="create-forum-form">
+            <div class="form-group">
+                <label for="forum-title">Forum Title:</label>
+                <input type="text" id="forum-title" name="forum-title" required autofocus placeholder="Enter forum title">
+            </div>
+            
+            <div class="form-group">
+                <div class="character-select-header">
+                    <label>Select Characters:</label>
+                    <a href="{{ url_for('addcharacter') }}" class="btn btn-secondary">Add Character</a>
+                </div>
+                <div id="selected-characters-tags" class="selected-characters-tags">
+                    <p class="empty-message">No characters selected. Search and click on characters below to add them.</p>
+                </div>
+                <div class="character-search-container">
+                    <input type="text" id="character-search-input" class="character-search-input" placeholder="Search characters by name, nickname, or fandom...">
+                    <div id="character-search-results" class="character-search-results hidden">
+                        <!-- Search results will be displayed here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Dialogue Posts:</label>
+                <div id="posts-container">
+                    <!-- First post editor will be added by JavaScript -->
+                </div>
+                <div class="add-post-container">
+                    <button type="button" class="btn btn-secondary" id="add-post-btn">Add Post</button>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="save-draft-btn">Save as Draft</button>
+                <button type="button" class="btn btn-primary" id="publish-btn">Publish</button>
+                <a href="{{ url_for('forum') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="preview-modal hidden">
+        <div class="preview-modal-content">
+            <div class="preview-modal-header">
+                <h3>Forum Preview</h3>
+                <button type="button" class="close-preview" id="close-preview-btn">&times;</button>
+            </div>
+            <div class="preview-modal-body" id="preview-content">
+                <!-- Preview content will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="application/json" id="characters-data">
+{{ characters_json | safe }}
+</script>
+
+<script>
+    window.WINDOW_CHARACTERS_DATA_STRING = '{{ characters_json | tojson | safe }}';
+    
+    // Now we parse this clean string.
+    try {
+        window.WINDOW_CHARACTERS_DATA = JSON.parse(window.WINDOW_CHARACTERS_DATA_STRING);
+    } catch (e) {
+        console.error("Failed to parse characters data in template:", e);
+        window.WINDOW_CHARACTERS_DATA = [];
+    }
+</script>
+
+<script>
+    const dataElement = document.getElementById('characters-data');
+    window.INIT_CHARACTERS = dataElement ? JSON.parse(dataElement.textContent) : [];
+    
+    console.log('DEBUG INIT_CHARACTERS:', window.INIT_CHARACTERS);
+</script>
+
+<script src="{{ url_for('static', filename='js/frontend.js') }}"></script>
+{% endblock %}

@@ -1,160 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome Post - Getting Started</title>
-    <link rel="stylesheet" href="../static/css/common.css">
-    <link rel="stylesheet" href="../static/css/forum.css">
-</head>
-<body>
-    <!-- Header -->
-    <div id="header" class="header">
-        <div class="header-top">
-            <div class="header-container">
-                <div class="logo">
-                    <a href="index.html">Forum</a>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-list">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="login.html">Login</a></li>
-                        <li><a href="register.html">Register</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-        <div class="header-search-bar">
-            <div class="header-container">
-                <div class="search-bar-container">
-                    <input type="text" placeholder="Enter search content" class="search-bar-input">
-                    <button class="search-bar-btn">Search</button>
-                </div>
-            </div>
-        </div>
+{% extends "base.html" %}
+
+{% block title %}Welcome Post - Getting Started - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; 
+    <a href="{{ url_for('index') }}">Forum</a> &gt; 
+    <a href="{{ url_for('forum') }}">General Discussion</a> &gt; 
+    <span>Welcome Post - Getting Started</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="thread-info-bar">
+    <div class="thread-stats">
+        <span>Views: <span id="thread-views">0</span></span> | 
+        <span>Replies: <span id="thread-replies">0</span></span>
     </div>
-
-    <!-- Breadcrumbs -->
-    <div class="breadcrumbs">
-        <a href="index.html">Home</a> &gt; 
-        <a href="index.html">Forum</a> &gt; 
-        <a href="forum.html">General Discussion</a> &gt; 
-        <span>Welcome Post - Getting Started</span>
+    <div class="thread-title-bar">
+        <h1 id="thread-title">Loading...</h1> <a href="#" class="copy-link">[Copy Link]</a>
     </div>
-
-    <!-- Main Content -->
-    <div id="main" class="main-container">
-        <!-- Thread Info -->
-        <div class="thread-info-bar">
-            <div class="thread-stats">
-                <span>Views: 156</span> | 
-                <span>Replies: 2</span>
-            </div>
-            <div class="thread-title-bar">
-                <h1>Welcome Post - Getting Started <a href="#" class="copy-link">[Copy Link]</a></h1>
-            </div>
-            <div class="thread-actions">
-                <button class="btn btn-primary post-btn">Post</button>
-                <button class="btn btn-secondary">Return to List</button>
-            </div>
-        </div>
-
-        <!-- Posts -->
-        <div class="posts-container">
-            <!-- Post 1 -->
-            <div class="post-item" data-floor="1">
-                <div class="post-sidebar">
-                    <div class="user-avatar">
-                        <img src="https://via.placeholder.com/80" alt="admin">
-                    </div>
-                    <div class="user-name">admin</div>
-                    <div class="user-stats">
-                        <div>1 Topics</div>
-                        <div>1 Posts</div>
-                        <div>100 Points</div>
-                    </div>
-                    <div class="user-title">Moderator</div>
-                </div>
-                <div class="post-content-area">
-                    <div class="post-header">
-                        <span class="post-number">1#</span>
-                        <span class="post-author-label">Original Poster</span>
-                        <span class="post-time">Posted on 2024-01-15 10:30:00</span>
-                        <a href="#" class="view-author-only">View author only</a>
-                        <input type="number" placeholder="Go to floor" class="goto-floor">
-                    </div>
-                    <div class="post-body">
-                        <p>Welcome to our forum! This is a demo post to showcase the forum functionality.</p>
-                        <p>Feel free to explore the features and post your thoughts.</p>
-                    </div>
-                    <div class="post-footer">
-                        <button class="post-action">★ Collect</button>
-                        <button class="post-action">👍 Like</button>
-                        <a href="#" class="post-action">Reply</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Post 2 -->
-            <div class="post-item" data-floor="2">
-                <div class="post-sidebar">
-                    <div class="user-avatar">
-                        <img src="https://via.placeholder.com/80" alt="user1">
-                    </div>
-                    <div class="user-name">user1</div>
-                    <div class="user-stats">
-                        <div>0 Topics</div>
-                        <div>1 Posts</div>
-                        <div>10 Points</div>
-                    </div>
-                    <div class="user-title">Member</div>
-                </div>
-                <div class="post-content-area">
-                    <div class="post-header">
-                        <span class="post-number">2#</span>
-                        <span class="post-time">Posted on 2024-01-15 11:20:00</span>
-                        <a href="#" class="view-author-only">View author only</a>
-                    </div>
-                    <div class="post-body">
-                        <p>Thanks for the welcome! Looking forward to participating in discussions.</p>
-                    </div>
-                    <div class="post-footer">
-                        <button class="post-action">👍 Like</button>
-                        <a href="#" class="post-action">Reply</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reply Section -->
-        <div class="reply-section">
-            <div class="reply-header">
-                <button class="btn btn-primary post-btn">Post</button>
-                <button class="btn btn-secondary">Return to List</button>
-            </div>
-            <form class="reply-form">
-                <div class="editor-toolbar">
-                    <button type="button" class="toolbar-btn" title="Bold">B</button>
-                    <button type="button" class="toolbar-btn" title="Italic">I</button>
-                    <button type="button" class="toolbar-btn" title="Link">🔗</button>
-                    <button type="button" class="toolbar-btn" title="Image">🖼️</button>
-                </div>
-                <textarea class="reply-content" rows="8" placeholder="You need to log in to reply | Login | Register now"></textarea>
-                <div class="reply-actions">
-                    <button type="submit" class="btn btn-primary">Submit Reply</button>
-                </div>
-            </form>
-        </div>
+    <div class="thread-actions">
+        <a href="{{ url_for('forum') }}" class="btn btn-secondary">Return to List</a>
     </div>
+</div>
 
-    <!-- Footer -->
-    <div id="footer" class="footer">
-        <div class="footer-container">
-            <p>Powered by BytePilot</p>
-        </div>
-    </div>
-
-    <script src="../static/js/common.js"></script>
-    <script src="../static/js/forum.js"></script>
-</body>
-</html>
+<div class="posts-container" id="posts-container">
+    <!-- Posts will be loaded dynamically by JavaScript -->
+    <div style="text-align: center; padding: 40px; color: #999;">Loading forum content...</div>
+</div>
+{% endblock %}

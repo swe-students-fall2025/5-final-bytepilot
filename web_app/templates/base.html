@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Forum{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forum.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+            <script>
+                setTimeout(function() {
+                    const flashMessages = document.querySelector('.flash-messages');
+                    if (flashMessages) {
+                        flashMessages.style.opacity = '0';
+                        setTimeout(function() {
+                            flashMessages.remove();
+                        }, 300);
+                    }
+                }, 5000);
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <div id="header" class="header">
+        <div class="header-top">
+            <div class="header-container">
+                <div class="logo">
+                    <a href="{{ url_for('index') }}">Forum</a>
+                </div>
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Home</a></li>
+                        <li><a href="{{ url_for('community') }}" {% if request.endpoint == 'community' %}class="active"{% endif %}>Community</a></li>
+                        <li><a href="{{ url_for('forum') }}" {% if request.endpoint == 'forum' %}class="active"{% endif %}>My Forums</a></li>
+                        <li><a href="{{ url_for('characters') }}" {% if request.endpoint == 'characters' %}class="active"{% endif %}>Characters</a></li>
+                        {% if current_user.is_authenticated %}
+                            <li><a href="{{ url_for('profile') }}" {% if request.endpoint == 'profile' %}class="active"{% endif %}>Profile</a></li>
+                            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for('login') }}" {% if request.endpoint == 'login' %}class="active"{% endif %}>Login</a></li>
+                            <li><a href="{{ url_for('register') }}" {% if request.endpoint == 'register' %}class="active"{% endif %}>Register</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        <div class="header-search-bar">
+            <div class="header-container">
+                <div class="search-bar-container">
+                    <input type="text" placeholder="Enter search content" class="search-bar-input">
+                    <button class="search-bar-btn">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% block breadcrumbs %}{% endblock %}
+
+    <div id="main" class="main-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <div id="footer" class="footer">
+        <div class="footer-container">
+            <p>Powered by BytePilot</p>
+        </div>
+    </div>
+
+    <!-- <script src="{{ url_for('static', filename='js/forum.js') }}"></script> -->
+    <script src="{{ url_for('static', filename='js/frontend.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

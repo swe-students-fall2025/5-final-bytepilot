@@ -1,87 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-    <link rel="stylesheet" href="../static/css/common.css">
-    <link rel="stylesheet" href="../static/css/forum.css">
-</head>
-<body>
-    <!-- Header -->
-    <div id="header" class="header">
-        <div class="header-top">
-            <div class="header-container">
-                <div class="logo">
-                    <a href="index.html">Forum</a>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-list">
-                        <li><a href="index.html" class="active">Home</a></li>
-                        <li><a href="login.html">Login</a></li>
-                        <li><a href="register.html">Register</a></li>
-                    </ul>
-                </nav>
+{% extends "base.html" %}
+
+{% block title %}Home - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; <span>Forum</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="forum-stats">
+    <span>Total Forums: <span id="total-forums">0</span></span> | 
+    <span>Total Characters: <span id="total-characters">0</span></span> | 
+    <span>Total Posts: <span id="total-posts">0</span></span>
+</div>
+
+    <div class="forum-section">
+        <div class="section-header">
+            <h2>Forum Generator</h2>
+            <div class="section-actions">
+                <a href="{{ url_for('addcharacter') }}" class="btn btn-secondary">Add Character</a>
+                <a href="/createforum" class="btn btn-primary">Create New Forum</a>
             </div>
         </div>
-        <div class="header-search-bar">
-            <div class="header-container">
-                <div class="search-bar-container">
-                    <input type="text" placeholder="Enter search content" class="search-bar-input">
-                    <button class="search-bar-btn">Search</button>
-                </div>
+
+    <div class="forum-category">
+        <div class="category-header">
+            <h3>My Forums</h3>
+            <div class="category-stats">
+                <span>Forums: <span id="forum-count">0</span></span>
             </div>
+        </div>
+        <div class="category-description">
+            View and manage your generated fan fiction forum dialogues
+        </div>
+        <div id="forums-list" class="forums-list">
+            <p class="empty-message-center">No forums created yet. <a href="/createforum">Create your first forum</a> to get started!</p>
         </div>
     </div>
-
-    <!-- Breadcrumbs -->
-    <div class="breadcrumbs">
-        <a href="index.html">Home</a> &gt; <span>Forum</span>
-    </div>
-
-    <!-- Main Content -->
-    <div id="main" class="main-container">
-        <!-- Forum Statistics -->
-        <div class="forum-stats">
-            <span>Today: 1</span> | 
-            <span>Posts: 1</span> | 
-            <span>Members: 2</span>
-        </div>
-
-        <!-- Forum Section -->
-        <div class="forum-section">
-            <div class="section-header">
-                <h2>General Discussion</h2>
+    
+    <div class="forum-section forum-section-spaced">
+        <div class="section-header">
+            <h2>Community</h2>
+            <div class="section-actions">
+                <a href="/community" class="btn btn-primary">View All</a>
             </div>
-
-            <!-- Forum Category -->
-            <div class="forum-category">
-                <div class="category-header">
-                    <h3>Welcome to the Forum</h3>
-                    <div class="category-stats">
-                        <span>Topics: 1</span> | 
-                        <span>Posts: 2</span>
-                    </div>
+        </div>
+        <div class="forum-category">
+            <div class="category-header">
+                <h3>Published Forums</h3>
+                <div class="category-stats">
+                    <span>Published: <span id="published-count">0</span></span>
                 </div>
-                <div class="category-description">
-                    General discussions and announcements
-                </div>
-                <div class="latest-post">
-                    <a href="viewthread.html">Welcome Post - Getting Started</a>
-                    <span class="post-meta">2 replies | 2024-01-15 10:30 admin</span>
-                </div>
+            </div>
+            <div class="category-description">
+                Explore fan fiction forum dialogues created by the community
+            </div>
+            <div id="published-list" class="forums-list">
+                <p class="empty-message-center">No published forums yet. Be the first to publish!</p>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Footer -->
-    <div id="footer" class="footer">
-        <div class="footer-container">
-            <p>Powered by BytePilot</p>
-        </div>
-    </div>
-
-    <script src="../static/js/common.js"></script>
-    <script src="../static/js/forum.js"></script>
-</body>
-</html>
+{% endblock %}

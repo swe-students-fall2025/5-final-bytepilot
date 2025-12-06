@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Add Character - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; 
+    <a href="{{ url_for('createforum') }}">Create Forum</a> &gt; 
+    <span>Add Character</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page-container">
+    <div class="auth-box-forum">
+        <div class="auth-box-header">
+            <h2>Add Character</h2>
+            <p>Create a forum account for a character. Search for existing characters or create a new one.</p>
+        </div>
+        
+        <form class="auth-form-forum" action="{{ url_for('addcharacter') }}" method="post" enctype="multipart/form-data" id="add-character-form">
+            <div class="form-group">
+                <label>Search Existing Character (Optional):</label>
+                <div class="character-search-container">
+                    <input type="text" id="character-db-search-input" class="character-search-input" placeholder="Search characters by name or fandom (e.g., 'harry')...">
+                    <div id="character-db-search-results" class="character-search-results hidden">
+                        <!-- Search results will be displayed here -->
+                    </div>
+                </div>
+                <small class="form-help">Search for existing characters from the database. Select one to auto-fill character name and fandom, then create a forum account (nickname) for this character below.</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="character-name">Character Name:</label>
+                <input type="text" id="character-name" name="name" required autofocus placeholder="Enter character name">
+            </div>
+            
+            <div class="form-group">
+                <label for="fandom">Fandom/Work:</label>
+                <input type="text" id="fandom" name="fandom" required placeholder="Enter fandom or work name">
+            </div>
+            
+            <div class="form-group">
+                <label for="nickname">Nickname (Forum Username):</label>
+                <input type="text" id="nickname" name="nickname" required placeholder="Enter forum username for this character">
+            </div>
+            
+            <div class="form-group">
+                <label for="avatar">Character Avatar:</label>
+                <input type="file" id="avatar" name="pic" accept="image/*">
+                <small class="form-help">Upload an image file for the character avatar (optional)</small>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <a href="{{ url_for('createforum') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

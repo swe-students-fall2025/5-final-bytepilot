@@ -6,3 +6,5 @@ class User(UserMixin):
         self.username = doc.get("username", "")
         self.email = doc.get("email", "")
         self.password = doc.get("password", "")
+        self.characters = doc.get("characters", []) 
+        self.threads = doc.get("threads", [])

@@ -1,107 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <link rel="stylesheet" href="../static/css/common.css">
-    <link rel="stylesheet" href="../static/css/forum.css">
-</head>
-<body>
-    <!-- Header -->
-    <div id="header" class="header">
-        <div class="header-top">
-            <div class="header-container">
-                <div class="logo">
-                    <a href="index.html">Forum</a>
-                </div>
-                <nav class="nav">
-                    <ul class="nav-list">
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="login.html">Login</a></li>
-                        <li><a href="register.html" class="active">Register</a></li>
-                    </ul>
-                </nav>
+{% extends "base.html" %}
+
+{% block title %}Register - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; <span>Register</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page-container">
+    <div class="auth-box-forum">
+        <div class="auth-box-header">
+            <h2>Register</h2>
+            <p>Create a new account to join the forum</p>
+        </div>
+        
+        <form class="auth-form-forum" method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required autofocus>
             </div>
-        </div>
-        <div class="header-search-bar">
-            <div class="header-container">
-                <div class="search-bar-container">
-                    <input type="text" placeholder="Enter search content" class="search-bar-input">
-                    <button class="search-bar-btn">Search</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Breadcrumbs -->
-    <div class="breadcrumbs">
-        <a href="index.html">Home</a> &gt; <span>Register</span>
-    </div>
-
-    <!-- Main Content -->
-    <div id="main" class="main-container">
-        <div class="auth-page-container">
-            <div class="auth-box-forum">
-                <div class="auth-box-header">
-                    <h2>Register</h2>
-                    <p>Create a new account to join the forum</p>
-                </div>
-                
-                <form class="auth-form-forum" onsubmit="handleRegister(event)">
-                    <div class="form-group">
-                        <label for="username">Username:</label>
-                        <input type="text" id="username" name="username" required autofocus>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="confirm-password">Confirm Password:</label>
-                        <input type="password" id="confirm-password" name="confirm-password" required>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Register</button>
-                        <a href="login.html" class="btn btn-secondary">Login</a>
-                    </div>
-                </form>
-                
-                <div class="auth-footer-forum">
-                    <p>Already have an account? <a href="login.html">Login here</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div id="footer" class="footer">
-        <div class="footer-container">
-            <p>Powered by BytePilot</p>
-        </div>
-    </div>
-
-    <script>
-        function handleRegister(event) {
-            event.preventDefault();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
             
-            if (password !== confirmPassword) {
-                alert('Passwords do not match!');
-                return;
-            }
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
             
-            alert('Registration functionality requires backend connection. This is a demo page.');
-        }
-    </script>
-</body>
-</html>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password:</label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Register</button>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">Login</a>
+            </div>
+        </form>
+        
+        <div class="auth-footer-forum">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

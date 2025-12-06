@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}My Characters - Forum{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a> &gt; 
+    <span>My Characters</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="forum-header-section">
+    <div class="forum-title">
+        <h2>My Characters</h2>
+        <div class="forum-stats-small">
+            <span>Total Characters: <span id="total-characters">{{ characters|length }}</span></span>
+        </div>
+    </div>
+    <div class="forum-actions">
+        <a href="{{ url_for('addcharacter') }}" class="btn btn-primary">Add Character</a>
+    </div>
+</div>
+
+<div class="thread-list-container">
+    <div id="characters-list" class="characters-list">
+        {% if characters %}
+            {% for char in characters %}
+                <div class="character-card">
+                    <div class="character-card-avatar">
+                        <img src="{{ char.pic or 'https://via.placeholder.com/80' }}" 
+                             alt="{{ char.name|e }}">
+                    </div>
+                    <div class="character-card-info">
+                        <h3 class="character-card-name">{{ char.name }}</h3>
+                        <div class="character-card-details">
+                            <div class="character-card-detail-item">
+                                <span class="detail-label">Nickname:</span>
+                                <span class="detail-value">{{ char.nickname }}</span>
+                            </div>
+                            <div class="character-card-detail-item">
+                                <span class="detail-label">Fandom:</span>
+                                <span class="detail-value">{{ char.fandom }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="character-card-actions">
+                        {# you can wire this later if you add real editing #}
+                        <button class="btn btn-secondary btn-sm" type="button" disabled>Edit</button>
+
+                        <form method="POST"
+                              action="{{ url_for('deletecharacter', char_id=char._id) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('Delete this character? This cannot be undone.');">
+                            <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #999;">
+                No characters created yet. 
+                <a href="{{ url_for('addcharacter') }}">Create your first character</a> to get started!
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
