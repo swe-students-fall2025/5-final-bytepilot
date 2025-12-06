@@ -39,9 +39,11 @@ The system runs as two Docker containers via `docker-compose`:
    ```
 
 2. Place the `.env` file in this directory.
+```bash
 SECRET_KEY=bytepilot
-MONGO_URI=mongodb+srv://bypilot:strongpasswordforproj5@cluster0.rcxky03.mongodb.net/?appName=Cluster0
+MONGO_URI=mongodb+srv://bytepilot:strongpasswordforproj5@cluster0.rcxky03.mongodb.net/?appName=Cluster0
 DB_NAME=forum_db
+```
 
 3. Start all services:
     ```bash
