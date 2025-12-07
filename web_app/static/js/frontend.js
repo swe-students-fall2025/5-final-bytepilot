@@ -112,40 +112,67 @@ function goToFloor(floor) {
 }
 
 function loadCharacters() {
-    /*
-    const stored = localStorage.getItem('characters');
-    if (stored) {
-        characters = JSON.parse(stored);
-    }
-    */
-    if (Array.isArray(window.WINDOW_CHARACTERS_DATA)) {
-        characters = window.WINDOW_CHARACTERS_DATA;
-    } else if (window.INIT_CHARACTERS) {
+    console.log('DEBUG: loadCharacters called');
+    
+    // Priority 1: Retrieve directly from template variables
+    if (Array.isArray(window.INIT_CHARACTERS) && window.INIT_CHARACTERS.length > 0) {
         characters = window.INIT_CHARACTERS;
-    } else {
-        characters = [];
-    }
-
-    // fallback to API if nothing came through templating
-    if (!characters.length) {
-        fetch('/api/my_characters')
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.ok) {
-                    characters = data.characters || [];
-                }
-            })
-            .catch(() => {
-                characters = [];
-            })
-            .finally(() => {
-                wireCharacterSearch();
-            });
-    } else {
+        console.log('DEBUG: Loaded from INIT_CHARACTERS:', characters.length, 'characters');
         wireCharacterSearch();
+        return;
     }
-
-    console.log('loadCharacters → characters =', characters);
+    
+    // Priority 2: Retrieve from old template variables
+    if (Array.isArray(window.WINDOW_CHARACTERS_DATA) && window.WINDOW_CHARACTERS_DATA.length > 0) {
+        characters = window.WINDOW_CHARACTERS_DATA;
+        console.log('DEBUG: Loaded from WINDOW_CHARACTERS_DATA:', characters.length, 'characters');
+        wireCharacterSearch();
+        return;
+    }
+    
+    // Priority 3: Retrieve from API
+    console.log('DEBUG: No template data, fetching from API');
+    fetch('/api/my_characters')
+        .then(res => {
+            if (!res.ok) {
+                throw new Error('API request failed');
+            }
+            return res.json();
+        })
+        .then(data => {
+            if (data && data.ok && Array.isArray(data.characters)) {
+                characters = data.characters || [];
+                console.log('DEBUG: Loaded from API:', characters.length, 'characters');
+                
+                // Ensure that _id is in string format
+                characters.forEach(char => {
+                    if (char._id && typeof char._id !== 'string') {
+                        char._id = char._id.toString();
+                    }
+                });
+                
+                // Display Character Search Immediately
+                wireCharacterSearch();
+                
+                // Update the role selection dropdown (if the post editor is already present)
+                updateCharacterSelects();
+            } else {
+                characters = [];
+                console.warn('DEBUG: No characters from API or invalid response');
+                wireCharacterSearch();
+            }
+        })
+        .catch(err => {
+            console.error('DEBUG: Error fetching characters:', err);
+            characters = [];
+            wireCharacterSearch();
+        })
+        .finally(() => {
+            // Ensure the search function is initialized
+            setTimeout(() => {
+                wireCharacterSearch();
+            }, 100);
+        });
 }
 
 function wireCharacterSearch() {
@@ -1499,39 +1526,48 @@ function initCharactersList() {
 }
 */
 function initCreateForum() {
+    console.log('DEBUG: initCreateForum called');
+    
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const editId = urlParams.get('edit');
+        
+        // Load the character first
         loadCharacters();
+        
+        // Add the first post editor
+        addPost();
+        
+        // If in edit mode, forum data will load later
         if (editId) {
-            loadForumForEdit(editId);
-        } else {
-            addPost();
-            loadCharacters();
+            // Wait until character loading is complete before loading forum data
+            setTimeout(() => {
+                loadForumForEdit(editId);
+            }, 300);
         }
         
+        // Set event listeners
         const addPostBtn = document.getElementById('add-post-btn');
         if (addPostBtn) {
-            addPostBtn.addEventListener('click', addPost);
-        }
-        
-        const closePreviewBtn = document.getElementById('close-preview-btn');
-        if (closePreviewBtn) {
-            closePreviewBtn.addEventListener('click', closePreview);
-        }
-        /*
-        const form = document.getElementById('create-forum-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveForum('draft');
+            addPostBtn.addEventListener('click', function() {
+                // Ensure character data has been loaded
+                if (characters.length === 0) {
+                    console.warn('No characters available. Please add characters first.');
+                    return;
+                }
+                addPost();
             });
         }
-        */
+        
         const saveDraftBtn = document.getElementById('save-draft-btn');
         if (saveDraftBtn) {
             saveDraftBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                // Verify whether character data exists
+                if (characters.length === 0) {
+                    alert('Please add characters first before creating a forum!');
+                    return;
+                }
                 saveForum('draft');
             });
         }
@@ -1540,10 +1576,20 @@ function initCreateForum() {
         if (publishBtn) {
             publishBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                // Verify whether character data exists
+                if (characters.length === 0) {
+                    alert('Please add characters first before publishing a forum!');
+                    return;
+                }
                 if (confirm('Are you sure you want to publish this forum? It will be visible to all users in the community.')) {
                     saveForum('published');
                 }
             });
+        }
+        
+        const closePreviewBtn = document.getElementById('close-preview-btn');
+        if (closePreviewBtn) {
+            closePreviewBtn.addEventListener('click', closePreview);
         }
         
         const previewModal = document.getElementById('preview-modal');
@@ -1554,6 +1600,7 @@ function initCreateForum() {
                 }
             });
         }
+        
     } catch (e) {
         console.error('Initialization error:', e);
         alert('Error initializing page: ' + e.message);
