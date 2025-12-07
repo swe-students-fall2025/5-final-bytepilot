@@ -331,18 +331,31 @@ def create_app():
             })
         return jsonify({"ok": True, "forums": forums})
     
-    @app.route("/api/my_forums/<thread_id>")
+    @app.route("/api/my_forums/<thread_id>", methods=["GET", "DELETE"])
     @login_required
     def api_my_forum(thread_id):
         try:
             thread_oid = ObjectId(thread_id)
         except InvalidId:
             return jsonify({"ok": False, "error": "Invalid thread id"}), 400
-        
+
+        if request.method == "DELETE":
+            result = app.db.forums.delete_one({
+                "_id": thread_oid,
+                "user_id": ObjectId(current_user.id)
+            })
+            if result.deleted_count == 0:
+                return jsonify({"ok": False, "error": "Thread not found"}), 404
+            app.db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$pull": {"threads": thread_oid}}
+            )
+            return jsonify({"ok": True})
+
         thread = app.db.forums.find_one({"_id": thread_oid, "user_id": ObjectId(current_user.id)})
         if not thread:
             return jsonify({"ok": False, "error": "Thread not found"}), 404
-        
+
         thread_data = {
             "id": str(thread.get("_id")),
             "title": thread.get("title", ""),
@@ -353,6 +366,7 @@ def create_app():
             "created_at": thread.get("created_at").isoformat() if thread.get("created_at") else None,
         }
         return jsonify({"ok": True, "thread": thread_data})
+
 
     @app.route("/api/my_characters")
     @login_required

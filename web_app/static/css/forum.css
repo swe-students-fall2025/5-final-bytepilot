@@ -1086,3 +1086,18 @@
     background-color: #d32f2f;
 }
 
+.forum-search-input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-right: 10px;
+    min-width: 240px;
+}
+.forum-search-input:focus {
+    outline: none;
+    border-color: #1e88e5;
+    box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.12);
+}
+
+
