@@ -1,6 +1,7 @@
 let characters = [];
 let selectedCharacters = [];
 let currentFilter = 'all';
+let currentSearchTerm = '';
 let allForums = [];
 
 function $(id) {
@@ -1032,70 +1033,51 @@ function initIndex() {
 }
 
 function loadForums() {
-    /*
-    allForums = JSON.parse(localStorage.getItem('forums') || '[]');
-    const characters = JSON.parse(localStorage.getItem('characters') || '[]');
-    
-    let draftCount = 0;
-    let publishedCount = 0;
-    allForums.forEach(forum => {
-        if (forum.status === 'published') {
-            publishedCount++;
-        } else {
-            draftCount++;
-        }
-    });
-    
-    document.getElementById('draft-count').textContent = draftCount;
-    document.getElementById('published-count').textContent = publishedCount;
-    
-    const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
-    filterForums(currentFilter, activeTab);
-    */
-    // use backend API to load forums instead of localStorage
     fetch('/api/my_forums')
-    .then(res => res.json())
-    .then(data => {
-        if (!data.ok) {
-            alert('Error loading forums: ' + (data.error || 'Unknown error'));
-            return;
-        }
-        allForums = data.forums || [];
-        const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
-        filterForums(currentFilter, activeTab);
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Network error loading forums');
-    });
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                alert('Error loading forums: ' + (data.error || 'Unknown error'));
+                return;
+            }
+            allForums = data.forums || [];
+            const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
+            filterForums(currentFilter, activeTab);
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Network error loading forums');
+        });
+}
+
+function matchesSearch(forum) {
+    if (!currentSearchTerm) return true;
+    const term = currentSearchTerm;
+    const title = (forum.title || '').toLowerCase();
+    const chars = (forum.characters || []).map(c => (c.name || '').toLowerCase()).join(' ');
+    return title.includes(term) || chars.includes(term);
 }
 
 function filterForums(filter, targetElement) {
     currentFilter = filter;
-    
-    document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    if (targetElement) {
-        targetElement.classList.add('active');
-    }
-    
+
+    document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+    if (targetElement) targetElement.classList.add('active');
+
     let filteredForums = allForums;
-    if (filter === 'draft') {
-        filteredForums = allForums.filter(f => f.status !== 'published');
-    } else if (filter === 'published') {
-        filteredForums = allForums.filter(f => f.status === 'published');
-    }
-    
-    // const characters = JSON.parse(localStorage.getItem('characters') || '[]');
+    if (filter === 'draft') filteredForums = allForums.filter(f => f.status !== 'published');
+    else if (filter === 'published') filteredForums = allForums.filter(f => f.status === 'published');
+
+    filteredForums = filteredForums.filter(matchesSearch);
+
     const tbody = document.getElementById('forums-table-body');
-    
+
     if (!filteredForums.length) {
         const message = filter === 'all' 
             ? 'No forums created yet. <a href="/createforum">Create your first forum</a> to get started!'
             : filter === 'draft'
-            ? 'No draft forums. <a href="/createforum">Create a new forum</a>'
-            : 'No published forums yet. Publish your forums to share them with the community!';
+                ? 'No draft forums. <a href="/createforum">Create a new forum</a>'
+                : 'No published forums yet. Publish your forums to share them with the community!';
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="empty-table-cell">
@@ -1106,28 +1088,10 @@ function filterForums(filter, targetElement) {
         document.getElementById('pagination-info').textContent = '0 forums';
         return;
     }
-    
+
     tbody.innerHTML = '';
     filteredForums.reverse().forEach(forum => {
-        /*
-        const postCount = forum.posts ? forum.posts.length : 0;
-        const createdDate = new Date(forum.createdAt).toLocaleDateString();
-        const status = forum.status || 'draft';
-        
-        const charIndices = new Set();
-        if (forum.posts) {
-            forum.posts.forEach(post => {
-                if (post.characterIndex !== undefined) {
-                    charIndices.add(post.characterIndex);
-                }
-            });
-        }
-        const charNames = Array.from(charIndices).map(idx => {
-            const char = characters[idx];
-            return char ? char.name : 'Unknown';
-        }).join(', ') || 'N/A';
-        */
-       const createdDate = forum.created_at 
+        const createdDate = forum.created_at 
             ? new Date(forum.created_at).toLocaleDateString()
             : '';
         const statusBadge = forum.status === 'published' 
@@ -1150,17 +1114,38 @@ function filterForums(filter, targetElement) {
             </td>
             <td class="col-actions">
                 <button class="btn-edit-forum" onclick="editForum('${forum.id}')" title="Edit Forum">Edit</button>
+                <button class="btn-delete-forum" onclick="deleteForum('${forum.id}')" title="Delete Forum">Delete</button>
             </td>
         `;
         tbody.appendChild(row);
     });
-    
+
     document.getElementById('pagination-info').textContent = `${filteredForums.length} forum${filteredForums.length !== 1 ? 's' : ''}`;
 }
 
+function deleteForum(threadId) {
+    if (!confirm('Delete this forum? This cannot be undone.')) return;
+    fetch(`/api/my_forums/${threadId}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                alert(data.error || 'Failed to delete forum');
+                return;
+            }
+            allForums = allForums.filter(f => f.id !== threadId);
+            const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
+            filterForums(currentFilter, activeTab);
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Network error deleting forum');
+        });
+}
+
+
 function initForum() {
     loadForums();
-    
+
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1168,7 +1153,17 @@ function initForum() {
             filterForums(filter, this);
         });
     });
+
+    const searchInput = document.getElementById('forum-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = (e.target.value || '').toLowerCase().trim();
+            const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
+            filterForums(currentFilter, activeTab);
+        });
+    }
 }
+
 
 function loadPublishedForums() {
     /*
