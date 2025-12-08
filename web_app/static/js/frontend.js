@@ -335,15 +335,25 @@ function updateCharacterSelects() {
         
         selectedCharacters.forEach(index => {
             const char = characters[index];
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = `${char.name} (${char.nickname})`;
-            select.appendChild(option);
+            if (char) {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${char.name} (${char.nickname})`;
+                select.appendChild(option);
+            }
         });
         
+        // Restore previous selection
         if (currentValue && selectedCharacters.includes(parseInt(currentValue))) {
             select.value = currentValue;
+        } else if (select.dataset.presetValue) {
+            // If a preset value exists, use the preset value.
+            select.value = select.dataset.presetValue;
+            delete select.dataset.presetValue;
         }
+        
+        // Trigger the change event to update character settings
+        select.dispatchEvent(new Event('change'));
     });
 }
 
@@ -737,17 +747,6 @@ function saveForum(status) {
 }
 
 function loadForumForEdit(forumId) {
-    /*
-    const forums = JSON.parse(localStorage.getItem('forums') || '[]');
-    const forum = forums.find(f => f.id === forumId);
-    
-    if (!forum) {
-        alert('Forum not found!');
-        window.location.href = '/forum';
-        return;
-    }
-    */
-    // use backend API to load forum instead of localStorage
     fetch(`/api/my_forums/${forumId}`)
         .then(res => res.json())
         .then(data => {
@@ -759,108 +758,173 @@ function loadForumForEdit(forumId) {
 
             const forum = data.thread;
 
-        document.querySelector('.auth-box-header h2').textContent = 'Edit Forum';
-        document.querySelector('.auth-box-header p').textContent = 'Edit your forum dialogue';
-        
-        document.getElementById('forum-title').value = forum.title || '';
-        
-        loadCharacters();
-    
-        setTimeout(() => {
-            if (forum.posts && forum.posts.length > 0) {
-                const charIndices = new Set();
-                forum.posts.forEach(post => {
-                    if (post.characterIndex !== undefined) {
-                        charIndices.add(post.characterIndex);
+            document.querySelector('.auth-box-header h2').textContent = 'Edit Forum';
+            document.querySelector('.auth-box-header p').textContent = 'Edit your forum dialogue';
+            
+            document.getElementById('forum-title').value = forum.title || '';
+            
+            // Wait for characters to finish loading
+            const initEdit = () => {
+                // first clear selectedCharacters
+                selectedCharacters = [];
+                
+                // Extract all unique characterIndex values from the post
+                if (forum.posts && forum.posts.length > 0) {
+                    const charIndices = new Set();
+                    forum.posts.forEach(post => {
+                        if (post.characterIndex !== undefined && post.characterIndex !== null) {
+                            // Ensure that characterIndex is a number
+                            const index = parseInt(post.characterIndex);
+                            if (!isNaN(index)) {
+                                charIndices.add(index);
+                            }
+                        }
+                    });
+                    
+                    // Set to selectedCharacters
+                    selectedCharacters = Array.from(charIndices);
+                    console.log('DEBUG: Selected characters for edit:', selectedCharacters);
+                    console.log('DEBUG: Characters array:', characters);
+                    
+                    // Update UI immediately
+                    updateSelectedTags();
+                    
+                    // Clear and recreate the post editor
+                    const postsContainer = document.getElementById('posts-container');
+                    postsContainer.innerHTML = '';
+                    
+                    forum.posts.forEach((post, index) => {
+                        const characterIndex = post.characterIndex;
+                        
+                        const postItem = document.createElement('div');
+                        postItem.className = 'post-editor-item';
+                        
+                        const header = document.createElement('div');
+                        header.className = 'post-editor-header';
+                        
+                        const selectWrapper = document.createElement('div');
+                        selectWrapper.className = 'character-select-wrapper';
+                        
+                        const select = document.createElement('select');
+                        select.className = 'character-select';
+                        select.required = true;
+                        select.innerHTML = '<option value="">Select Character</option>';
+                        
+                        // Add options to this dropdown menu
+                        selectedCharacters.forEach(idx => {
+                            const char = characters[idx];
+                            if (char) {
+                                const option = document.createElement('option');
+                                option.value = idx;
+                                option.textContent = `${char.name} (${char.nickname})`;
+                                // If this is the character currently in use in the post, set it to selected
+                                if (idx === characterIndex) {
+                                    option.selected = true;
+                                }
+                                select.appendChild(option);
+                            }
+                        });
+                        
+                        select.addEventListener('change', function() {
+                            toggleCharacterSettings(this);
+                        });
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'btn-remove-post';
+                        removeBtn.textContent = 'Remove';
+                        removeBtn.addEventListener('click', function() {
+                            removePost(removeBtn);
+                        });
+                        
+                        const charSettings = document.createElement('div');
+                        charSettings.className = 'character-settings';
+                        
+                        // If a character is selected, display the settings area
+                        if (characterIndex !== undefined && characterIndex !== null) {
+                            charSettings.classList.add('active');
+                            const character = characters[characterIndex];
+                            if (character) {
+                                const nicknameRow = document.createElement('div');
+                                nicknameRow.className = 'character-setting-row';
+                                nicknameRow.innerHTML = `
+                                    <label>Nickname:</label>
+                                    <input type="text" class="character-nickname-input" 
+                                    placeholder="Forum username for this character" 
+                                    value="${escapeHtml(post.nickname || character.nickname)}">
+                                `;
+                                
+                                const avatarRow = document.createElement('div');
+                                avatarRow.className = 'character-setting-row';
+                                avatarRow.innerHTML = `
+                                    <label>Avatar:</label>
+                                    <input type="file" class="character-avatar-input" accept="image/*">
+                                `;
+                                
+                                // If an avatar file exists, display the filename
+                                if (post.avatar && post.avatar !== character.pic) {
+                                    avatarRow.innerHTML += `
+                                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                            Current: ${escapeHtml(post.avatar)}
+                                        </div>
+                                    `;
+                                }
+                                
+                                charSettings.appendChild(nicknameRow);
+                                charSettings.appendChild(avatarRow);
+                            }
+                        }
+                        
+                        selectWrapper.appendChild(select);
+                        header.appendChild(selectWrapper);
+                        header.appendChild(removeBtn);
+                        postItem.appendChild(header);
+                        postItem.appendChild(charSettings);
+                        
+                        const textarea = document.createElement('textarea');
+                        textarea.className = 'post-content-input';
+                        textarea.rows = 4;
+                        textarea.placeholder = 'Enter post content...';
+                        textarea.required = true;
+                        textarea.value = post.content || '';
+                        
+                        postItem.appendChild(textarea);
+                        postsContainer.appendChild(postItem);
+                    });
+                }
+            };
+            
+            // If the character has been loaded, initialize immediately
+            if (characters.length > 0) {
+                initEdit();
+            } else {
+                // Otherwise, wait for the character to finish loading
+                console.log('DEBUG: Waiting for characters to load before editing...');
+                const checkCharactersInterval = setInterval(() => {
+                    if (characters.length > 0) {
+                        clearInterval(checkCharactersInterval);
+                        console.log('DEBUG: Characters loaded, now initializing edit');
+                        initEdit();
                     }
-                });
+                }, 100);
                 
-                selectedCharacters = Array.from(charIndices);
-                updateSelectedTags();
-                
-                const postsContainer = document.getElementById('posts-container');
-                postsContainer.innerHTML = '';
-                
-                forum.posts.forEach((post, index) => {
-                    const character = characters[post.characterIndex];
-                    if (!character) return;
-                    
-                    const postItem = document.createElement('div');
-                    postItem.className = 'post-editor-item';
-                    
-                    const header = document.createElement('div');
-                    header.className = 'post-editor-header';
-                    
-                    const selectWrapper = document.createElement('div');
-                    selectWrapper.className = 'character-select-wrapper';
-                    
-                    const select = document.createElement('select');
-                    select.className = 'character-select';
-                    select.required = true;
-                    select.innerHTML = '<option value="">Select Character</option>';
-                    select.value = post.characterIndex;
-                    select.addEventListener('change', function() {
-                        toggleCharacterSettings(this);
-                    });
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = 'button';
-                    removeBtn.className = 'btn-remove-post';
-                    removeBtn.textContent = 'Remove';
-                    removeBtn.addEventListener('click', function() {
-                        removePost(removeBtn);
-                    });
-                    
-                    const charSettings = document.createElement('div');
-                    charSettings.className = 'character-settings active';
-                    
-                    const nicknameRow = document.createElement('div');
-                    nicknameRow.className = 'character-setting-row';
-                    nicknameRow.innerHTML = `
-                        <label>Nickname:</label>
-                        <input type="text" class="character-nickname-input" 
-                        placeholder="Forum username for this character" 
-                        value="${escapeHtml(post.nickname || character.nickname)}">
-                    `;
-                    
-                    const avatarRow = document.createElement('div');
-                    avatarRow.className = 'character-setting-row';
-                    avatarRow.innerHTML = `
-                        <label>Avatar:</label>
-                        <input type="file" class="character-avatar-input" accept="image/*">
-                    `;
-                    
-                    charSettings.appendChild(nicknameRow);
-                    charSettings.appendChild(avatarRow);
-                    
-                    selectWrapper.appendChild(select);
-                    header.appendChild(selectWrapper);
-                    header.appendChild(removeBtn);
-                    postItem.appendChild(header);
-                    postItem.appendChild(charSettings);
-                    
-                    const textarea = document.createElement('textarea');
-                    textarea.className = 'post-content-input';
-                    textarea.rows = 4;
-                    textarea.placeholder = 'Enter post content...';
-                    textarea.required = true;
-                    textarea.value = post.content || '';
-                    
-                    postItem.appendChild(textarea);
-                    postsContainer.appendChild(postItem);
-                    
-                    updateCharacterSelects();
-                });
+                // Set timeout
+                setTimeout(() => {
+                    clearInterval(checkCharactersInterval);
+                    if (characters.length === 0) {
+                        console.error('DEBUG: Characters never loaded');
+                        alert('Failed to load characters. Please refresh the page.');
+                    }
+                }, 5000);
             }
             
             sessionStorage.setItem('editingForumId', forumId);
-        }, 200);
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Network error loading forum for edit');
-        window.location.href = '/forum';
-    });
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Network error loading forum for edit');
+            window.location.href = '/forum';
+        });
 }
 
 function editForum(forumId) {
