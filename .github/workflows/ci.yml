@@ -26,6 +26,7 @@ jobs:
       
       - name: Run tests with coverage
         working-directory: ./web_app
+        env:
+          SECRET_KEY: test-secret-key-for-ci
         run: |
           pytest --cov=app --cov-report=term-missing
-
