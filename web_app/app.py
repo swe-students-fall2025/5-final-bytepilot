@@ -21,12 +21,20 @@ class MongoJSONEncoder(JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.secret_key = os.getenv("SECRET_KEY")
     app.json_encoder = MongoJSONEncoder
     login_manager.init_app(app)
     login_manager.login_view = "login" 
+
+    if test_config is not None:
+        app.config.from_mapping(test_config)
+    else:
+        app.config.from_mapping(
+            SECRET_KEY=os.environ.get("SECRET_KEY", "dev-secret-key"),
+            MONGO_URI=os.environ.get("MONGO_URI", "mongodb://localhost:27017/forum_db"),
+        )
 
     # client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
