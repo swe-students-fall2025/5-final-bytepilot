@@ -21,13 +21,18 @@ class MongoJSONEncoder(JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-def create_app():
+def create_app(testing=False):
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.secret_key = os.getenv("SECRET_KEY")
     app.json_encoder = MongoJSONEncoder
     login_manager.init_app(app)
     login_manager.login_view = "login" 
 
+    if testing:
+        app.config["TESTING"] = True
+        app.db = None   # tests monkeypatch DB anyway
+        return app
+    
     # client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     print("MONGO URI I AM USING:", MONGO_URI)
