@@ -2,7 +2,7 @@ let characters = [];
 let selectedCharacters = [];
 let currentFilter = 'all';
 let currentSearchTerm = '';
-let allForums = [];
+let searchTerm = ''; 
 
 function $(id) {
     return document.getElementById(id);
@@ -74,6 +74,30 @@ function setupEventListeners() {
             }
         });
     });
+
+    const headerSearchInput = document.querySelector('.search-bar-input');
+    const headerSearchBtn   = document.querySelector('.search-bar-btn');
+
+    if (headerSearchInput && headerSearchBtn) {
+        const submitGlobalSearch = () => {
+            const term = headerSearchInput.value.trim();
+            if (!term) return;
+
+            window.location.href = '/community?q=' + encodeURIComponent(term);
+        };
+
+        headerSearchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            submitGlobalSearch();
+        });
+
+        headerSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitGlobalSearch();
+            }
+        });
+    }
 }
 
 function copyThreadLink() {
@@ -1033,16 +1057,18 @@ function initIndex() {
 }
 
 function loadForums() {
-    fetch('/api/my_forums')
+    const params = new URLSearchParams();
+    if (currentFilter !== 'all') params.set('status', currentFilter);
+    if (currentSearchTerm) params.set('q', currentSearchTerm);
+    fetch('/api/my_forums?' + params.toString())
         .then(res => res.json())
         .then(data => {
             if (!data.ok) {
                 alert('Error loading forums: ' + (data.error || 'Unknown error'));
                 return;
             }
-            allForums = data.forums || [];
-            const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
-            filterForums(currentFilter, activeTab);
+            const forums = data.forums || [];
+            renderForumsTable(forums);
         })
         .catch(err => {
             console.error(err);
@@ -1050,55 +1076,37 @@ function loadForums() {
         });
 }
 
-function matchesSearch(forum) {
-    if (!currentSearchTerm) return true;
-    const term = currentSearchTerm;
-    const title = (forum.title || '').toLowerCase();
-    const chars = (forum.characters || []).map(c => (c.name || '').toLowerCase()).join(' ');
-    return title.includes(term) || chars.includes(term);
-}
-
-function filterForums(filter, targetElement) {
-    currentFilter = filter;
-
-    document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
-    if (targetElement) targetElement.classList.add('active');
-
-    let filteredForums = allForums;
-    if (filter === 'draft') filteredForums = allForums.filter(f => f.status !== 'published');
-    else if (filter === 'published') filteredForums = allForums.filter(f => f.status === 'published');
-
-    filteredForums = filteredForums.filter(matchesSearch);
-
+function renderForumsTable(forums) {
     const tbody = document.getElementById('forums-table-body');
+    const infoEl = document.getElementById('pagination-info');
 
-    if (!filteredForums.length) {
-        const message = filter === 'all' 
-            ? 'No forums created yet. <a href="/createforum">Create your first forum</a> to get started!'
-            : filter === 'draft'
-                ? 'No draft forums. <a href="/createforum">Create a new forum</a>'
-                : 'No published forums yet. Publish your forums to share them with the community!';
+    if (!tbody) return;
+
+    if (!forums.length) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="empty-table-cell">
-                    ${message}
+                    No forums found. <a href="/createforum">Create your first forum</a> to get started!
                 </td>
             </tr>
         `;
-        document.getElementById('pagination-info').textContent = '0 forums';
+        if (infoEl) infoEl.textContent = '0 forums';
         return;
     }
 
     tbody.innerHTML = '';
-    filteredForums.reverse().forEach(forum => {
-        const createdDate = forum.created_at 
+    forums.forEach(forum => {
+        const createdDate = forum.created_at
             ? new Date(forum.created_at).toLocaleDateString()
             : '';
-        const statusBadge = forum.status === 'published' 
+        const statusBadge = forum.status === 'published'
             ? '<span class="status-badge published">Published</span>'
             : '<span class="status-badge draft">Draft</span>';
-        const charNames = (forum.characters || []).map(c => c.name).join(', ') || 'N/A';
-        
+        let charNames = 'N/A';
+        if (Array.isArray(forum.characters) && forum.characters.length > 0) {
+            charNames = forum.characters[0]?.name || 'N/A';
+        }
+
         const row = document.createElement('tr');
         row.className = 'thread-row';
         row.innerHTML = `
@@ -1114,13 +1122,15 @@ function filterForums(filter, targetElement) {
             </td>
             <td class="col-actions">
                 <button class="btn-edit-forum" onclick="editForum('${forum.id}')" title="Edit Forum">Edit</button>
-                <button class="btn-delete-forum" onclick="deleteForum('${forum.id}')" title="Delete Forum">Delete</button>
+                <button class="btn-edit-forum btn-delete-forum" onclick="deleteForum('${forum.id}')" title="Delete Forum">Delete</button>
             </td>
         `;
         tbody.appendChild(row);
     });
 
-    document.getElementById('pagination-info').textContent = `${filteredForums.length} forum${filteredForums.length !== 1 ? 's' : ''}`;
+    if (infoEl) {
+        infoEl.textContent = `${forums.length} forum${forums.length !== 1 ? 's' : ''}`;
+    }
 }
 
 function deleteForum(threadId) {
@@ -1132,9 +1142,7 @@ function deleteForum(threadId) {
                 alert(data.error || 'Failed to delete forum');
                 return;
             }
-            allForums = allForums.filter(f => f.id !== threadId);
-            const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
-            filterForums(currentFilter, activeTab);
+            loadForums();
         })
         .catch(err => {
             console.error(err);
@@ -1144,13 +1152,17 @@ function deleteForum(threadId) {
 
 
 function initForum() {
-    loadForums();
 
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
-            const filter = this.getAttribute('data-filter');
-            filterForums(filter, this);
+            currentFilter = this.getAttribute('data-filter') || 'all';
+
+            document.querySelectorAll('.filter-tab')
+                .forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            loadForums();
         });
     });
 
@@ -1158,10 +1170,10 @@ function initForum() {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             currentSearchTerm = (e.target.value || '').toLowerCase().trim();
-            const activeTab = document.querySelector(`.filter-tab[data-filter="${currentFilter}"]`);
-            filterForums(currentFilter, activeTab);
+            loadForums();
         });
     }
+    loadForums();
 }
 
 
@@ -1172,7 +1184,12 @@ function loadPublishedForums() {
     const characters = JSON.parse(localStorage.getItem('characters') || '[]');
     */
     // use backend API to load published forums instead of localStorage
-    fetch('/api/published_forums')
+    const params = new URLSearchParams();
+    if (searchTerm) {
+        params.set('q', searchTerm);
+    }
+
+    fetch('/api/published_forums?' + params.toString())
         .then(res => res.json())
         .then(data => {
             if (!data.ok) {
@@ -1180,9 +1197,16 @@ function loadPublishedForums() {
                 return;
             }
             const publishedForums = data.forums || [];
-            document.getElementById('published-count').textContent = publishedForums.length;
-            document.getElementById('pagination-info').textContent = `${publishedForums.length} forum${publishedForums.length !== 1 ? 's' : ''}`;
-            
+            const publishedCountEl = document.getElementById('published-count');
+            if (publishedCountEl) {
+                publishedCountEl.textContent = publishedForums.length;
+            }
+
+            const forumCountEl = document.getElementById('forum-count');
+            if (forumCountEl) {
+                forumCountEl.textContent =
+                    `${publishedForums.length} forum${publishedForums.length !== 1 ? 's' : ''}`;
+            }
             const tbody = document.getElementById('forums-table-body');
             if (!publishedForums.length) {
                 tbody.innerHTML = `
@@ -1222,9 +1246,10 @@ function loadPublishedForums() {
                     : forum.created_at
                         ? new Date(forum.created_at).toLocaleDateString()
                         : '';
-                const charNames = forum.characters 
-                    ? forum.characters.map(c => c.name).join(', ')
-                    : 'N/A';
+                let charNames = 'N/A';
+                if (Array.isArray(forum.characters) && forum.characters.length > 0) {
+                    charNames = forum.characters[0]?.name || 'N/A'; // OP only
+                }
                 const row = document.createElement('tr');
                 row.className = 'thread-row';
                 row.innerHTML = `
@@ -1244,6 +1269,15 @@ function loadPublishedForums() {
 }
 
 function initCommunity() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const q = urlParams.get('q') || '';
+
+    searchTerm = q.trim();
+
+    const headerSearchInput = document.querySelector('.search-bar-input');
+    if (headerSearchInput && searchTerm) {
+        headerSearchInput.value = q;
+    }
     loadPublishedForums();
 }
 

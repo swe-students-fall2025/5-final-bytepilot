@@ -21,21 +21,37 @@ class MongoJSONEncoder(JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-def create_app():
+def create_app(testing=False):
     app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.secret_key = os.getenv("SECRET_KEY")
     app.json_encoder = MongoJSONEncoder
     login_manager.init_app(app)
     login_manager.login_view = "login" 
 
-    client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
-    app.db = client[os.getenv("DB_NAME", "default_db")]
+    if testing:
+        app.config["TESTING"] = True
+        app.db = None   # tests monkeypatch DB anyway
+    else:
+        # client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
+        MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+        print("MONGO URI I AM USING:", MONGO_URI)
+        client = MongoClient(MONGO_URI)
+        db_name = os.getenv("DB_NAME", "forum_db")
+        app.db = client[db_name]
+
+        try:
+            client.admin.command("ping")
+            print(" * Connected to MongoDB!")
+            print(" * Using DB:", app.db.name)
+            print(" * Users count:", app.db.users.count_documents({}))
+        except Exception as e:
+            print(" * MongoDB connection error:", e)
 
     @login_manager.user_loader
     def load_user(user_id):
         db_user = app.db.users.find_one({"_id": ObjectId(user_id)})
         return User(db_user) if db_user else None
-
+    
     @app.route("/")
     def index():
         return render_template("index.html")
@@ -317,7 +333,24 @@ def create_app():
     @app.route("/api/my_forums")
     @login_required
     def my_forums():
-        cursor = app.db.forums.find({"user_id": ObjectId(current_user.id)}).sort("updated_at", -1)
+        status = request.args.get("status")
+        q = request.args.get("q")
+        
+        query = {"user_id": ObjectId(current_user.id)}
+
+        if status in ["draft", "published"]:
+            query["status"] = status
+
+        if q:
+            regex = {"$regex": q, "$options": "i"}
+            query["$or"] = [
+                {"title": regex},
+                {"characters.name": regex},
+                {"characters.nickname": regex},
+                {"characters.fandom": regex},
+            ]
+
+        cursor = app.db.forums.find(query).sort("updated_at", -1)
         forums = []
         for doc in cursor:
             forums.append({
@@ -377,7 +410,20 @@ def create_app():
     
     @app.route("/api/published_forums")
     def api_published_forums():
-        cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
+        q = request.args.get("q")
+
+        query = {"status": "published"}
+
+        if q:
+            regex = {"$regex": q, "$options": "i"}
+            query["$or"] = [
+                {"title": regex},
+                {"characters.name": regex},
+                {"characters.nickname": regex},
+                {"characters.fandom": regex},
+            ]
+
+        cursor = app.db.forums.find(query).sort("published_at", -1)
 
         forums = []
         for t in cursor:
@@ -391,6 +437,7 @@ def create_app():
             })
 
         return jsonify({"ok": True, "forums": forums})
+    
     @app.route("/community")
     def community():
         return render_template("community.html")
@@ -410,10 +457,8 @@ def create_app():
             })
         return jsonify({"ok": True, "forums": forums})
     
-
-        
     return app
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
