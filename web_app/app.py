@@ -31,29 +31,27 @@ def create_app(testing=False):
     if testing:
         app.config["TESTING"] = True
         app.db = None   # tests monkeypatch DB anyway
-        return app
-    
-    # client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    print("MONGO URI I AM USING:", MONGO_URI)
-    client = MongoClient(MONGO_URI)
-    db_name = os.getenv("DB_NAME", "forum_db")
-    app.db = client[db_name]
+    else:
+        # client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
+        MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+        print("MONGO URI I AM USING:", MONGO_URI)
+        client = MongoClient(MONGO_URI)
+        db_name = os.getenv("DB_NAME", "forum_db")
+        app.db = client[db_name]
+
+        try:
+            client.admin.command("ping")
+            print(" * Connected to MongoDB!")
+            print(" * Using DB:", app.db.name)
+            print(" * Users count:", app.db.users.count_documents({}))
+        except Exception as e:
+            print(" * MongoDB connection error:", e)
 
     @login_manager.user_loader
     def load_user(user_id):
         db_user = app.db.users.find_one({"_id": ObjectId(user_id)})
         return User(db_user) if db_user else None
     
-    try:
-        client.admin.command("ping")
-        print(" * Connected to MongoDB!")
-        print(" * Using DB:", app.db.name)
-        print(" * Users count:", app.db.users.count_documents({}))
-    except Exception as e:
-        print(" * MongoDB connection error:", e)
-
-
     @app.route("/")
     def index():
         return render_template("index.html")
