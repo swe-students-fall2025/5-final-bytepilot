@@ -173,9 +173,17 @@ def create_app(testing=False):
     @app.route("/characters")
     @login_required
     def characters():
+        q = request.args.get("q", "").strip()
         user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
         characters = user.get("characters", [])
-        return render_template("characters.html", characters=characters)
+
+        if q:
+            characters = [char for char in characters 
+                          if q.lower() in char.get("name", "").lower() 
+                          or q.lower() in char.get("nickname", "").lower() 
+                          or q.lower() in char.get("fandom", "").lower()]
+            
+        return render_template("characters.html", characters=characters, query=q)
     
     @app.route("/addcharacter", methods = ['GET', 'POST'])
     @login_required

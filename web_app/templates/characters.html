@@ -18,6 +18,7 @@
         </div>
     </div>
     <div class="forum-actions">
+        <input type="text" id="character-search-input" class="forum-search-input" name = "q" placeholder="Search by character..." value="{{ query or '' }}">
         <a href="{{ url_for('addcharacter') }}" class="btn btn-primary">Add Character</a>
     </div>
 </div>
