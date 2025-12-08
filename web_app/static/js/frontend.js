@@ -1068,6 +1068,24 @@ function loadForums() {
                 return;
             }
             const forums = data.forums || [];
+            const draftCountEl     = document.getElementById('draft-count');
+            const publishedCountEl = document.getElementById('published-count');
+            const forumCountEl     = document.getElementById('forum-count');
+
+            const drafts = forums.filter(f => f.status === 'draft').length;
+            const published = forums.filter(f => f.status === 'published').length;
+            const total = forums.length;
+
+            if (draftCountEl) {
+                draftCountEl.textContent = drafts;
+            }
+            if (publishedCountEl) {
+                publishedCountEl.textContent = published;
+            }
+            if (forumCountEl) {
+                forumCountEl.textContent = `${total} forum${total !== 1 ? 's' : ''}`;
+            }
+            
             renderForumsTable(forums);
         })
         .catch(err => {
@@ -1104,7 +1122,7 @@ function renderForumsTable(forums) {
             : '<span class="status-badge draft">Draft</span>';
         let charNames = 'N/A';
         if (Array.isArray(forum.characters) && forum.characters.length > 0) {
-            charNames = forum.characters[0]?.name || 'N/A';
+            charNames = forum.characters[0]?.nickname || 'N/A';
         }
 
         const row = document.createElement('tr');
@@ -1248,7 +1266,7 @@ function loadPublishedForums() {
                         : '';
                 let charNames = 'N/A';
                 if (Array.isArray(forum.characters) && forum.characters.length > 0) {
-                    charNames = forum.characters[0]?.name || 'N/A'; // OP only
+                    charNames = forum.characters[0]?.nickname || 'N/A'; // OP only
                 }
                 const row = document.createElement('tr');
                 row.className = 'thread-row';
@@ -1699,6 +1717,26 @@ function initAddCharacter() {
     */
 }
 
+function initCharacter() {
+  const input = document.getElementById("character-search-input");
+  if (!input) return;
+
+  let timer;
+
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const q = input.value.trim();
+      const params = new URLSearchParams(window.location.search);
+
+      q ? params.set("q", q) : params.delete("q");
+
+      const qs = params.toString();
+      window.location.href = qs ? `/characters?${qs}` : "/characters";
+    }, 300);
+  });
+}
+
 function initRegister() {
     const form = document.querySelector('.auth-form-forum');
     if (form) {
@@ -1736,6 +1774,8 @@ document.addEventListener('DOMContentLoaded', function() {
         initAddCharacter();
     } else if (document.getElementById('posts-container') && document.getElementById('thread-title')) {
         initViewThread();
+    } else if (document.getElementById('character-search-input')) {
+        initCharacter();
     /*
     } else if (document.getElementById('characters-list')) {
         initCharactersList();
