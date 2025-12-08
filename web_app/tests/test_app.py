@@ -8,7 +8,6 @@ from datetime import datetime
 # Import the Flask factory and module namespace so we can monkeypatch render_template
 from app import create_app
 import app as app_module
-app = create_app(testing=True)
 #
 # Minimal in-memory fake MongoDB implementation used for testing
 #
@@ -224,7 +223,7 @@ def app_and_client(monkeypatch):
     if not os.getenv("SECRET_KEY"):
         os.environ["SECRET_KEY"] = "test-secret-key-for-ci"
 
-    app = create_app()
+    app = create_app(testing=True)
     fake_db = FakeDB()
     app.db = fake_db
 
