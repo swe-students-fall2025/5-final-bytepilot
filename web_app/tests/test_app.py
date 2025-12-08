@@ -218,6 +218,11 @@ def app_and_client(monkeypatch):
         return f"TEMPLATE:{template_name}:{json.dumps(keys, default=str)}"
 
     monkeypatch.setattr(app_module, "render_template", fake_render_template)
+    
+    # Set SECRET_KEY for testing if not already set
+    import os
+    if not os.getenv("SECRET_KEY"):
+        os.environ["SECRET_KEY"] = "test-secret-key-for-ci"
 
     app = create_app()
     fake_db = FakeDB()
