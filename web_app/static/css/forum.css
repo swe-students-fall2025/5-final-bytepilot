@@ -1111,8 +1111,6 @@
     box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.12);
 }
 
-/* === Status filter (All / Draft / Published) – refreshed style === */
-
 .thread-filters {
     display: flex;
     justify-content: space-between;
@@ -1124,7 +1122,6 @@
     flex-wrap: wrap;
 }
 
-/* Wrap for the status pills on the left */
 .filter-tabs {
     display: inline-flex;
     align-items: center;
@@ -1135,10 +1132,9 @@
     border: 1px solid #ddd;
 }
 
-/* Individual status pill */
 .filter-tab {
     padding: 6px 14px;
-    margin: 0;                  /* override old margin */
+    margin: 0; 
     color: #666;
     text-decoration: none;
     border-radius: 999px;
