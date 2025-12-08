@@ -329,7 +329,24 @@ def create_app():
     @app.route("/api/my_forums")
     @login_required
     def my_forums():
-        cursor = app.db.forums.find({"user_id": ObjectId(current_user.id)}).sort("updated_at", -1)
+        status = request.args.get("status")
+        q = request.args.get("q")
+        
+        query = {"user_id": ObjectId(current_user.id)}
+
+        if status in ["draft", "published"]:
+            query["status"] = status
+
+        if q:
+            regex = {"$regex": q, "$options": "i"}
+            query["$or"] = [
+                {"title": regex},
+                {"characters.name": regex},
+                {"characters.nickname": regex},
+                {"characters.fandom": regex},
+            ]
+
+        cursor = app.db.forums.find(query).sort("updated_at", -1)
         forums = []
         for doc in cursor:
             forums.append({
@@ -389,7 +406,20 @@ def create_app():
     
     @app.route("/api/published_forums")
     def api_published_forums():
-        cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
+        q = request.args.get("q")
+
+        query = {"status": "published"}
+
+        if q:
+            regex = {"$regex": q, "$options": "i"}
+            query["$or"] = [
+                {"title": regex},
+                {"characters.name": regex},
+                {"characters.nickname": regex},
+                {"characters.fandom": regex},
+            ]
+
+        cursor = app.db.forums.find(query).sort("published_at", -1)
 
         forums = []
         for t in cursor:
@@ -403,6 +433,7 @@ def create_app():
             })
 
         return jsonify({"ok": True, "forums": forums})
+    
     @app.route("/community")
     def community():
         return render_template("community.html")

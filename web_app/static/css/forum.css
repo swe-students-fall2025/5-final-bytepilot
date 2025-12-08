@@ -661,17 +661,18 @@
 
 .col-replies {
     width: 120px;
-    text-align: center;
+    text-align: left;
 }
 
 .col-last {
-    width: 150px;
-    text-align: right;
+    width: 100px;
+    text-align: center;
 }
 
 .col-actions {
     width: 100px;
     text-align: center;
+    
 }
 
 .btn-edit-forum {
@@ -683,10 +684,20 @@
     cursor: pointer;
     font-size: 12px;
     transition: background-color 0.2s;
+    width: 60px;
+    margin-bottom: 5px;
 }
 
 .btn-edit-forum:hover {
     background-color: #1565c0;
+}
+
+.btn-delete-forum {
+    background-color: #CC0000; 
+}
+
+.btn-delete-forum:hover {
+    background-color: #AA0000;
 }
 
 .last-time {
@@ -1100,4 +1111,54 @@
     box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.12);
 }
 
+/* === Status filter (All / Draft / Published) – refreshed style === */
+
+.thread-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Wrap for the status pills on the left */
+.filter-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px;
+    background-color: #fff;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+}
+
+/* Individual status pill */
+.filter-tab {
+    padding: 6px 14px;
+    margin: 0;                  /* override old margin */
+    color: #666;
+    text-decoration: none;
+    border-radius: 999px;
+    font-size: 13px;
+    line-height: 1;
+    background-color: transparent;
+    border: none;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+}
+
+.filter-tab:hover {
+    background-color: #e9f2fc;
+    color: #1e88e5;
+}
+
+.filter-tab.active {
+    background-color: #1e88e5;
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 0 0 1px rgba(30, 136, 229, 0.15);
+}
 
