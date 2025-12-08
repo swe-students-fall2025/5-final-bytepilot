@@ -28,13 +28,25 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = "login" 
 
-    client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
-    app.db = client[os.getenv("DB_NAME", "default_db")]
+    # client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"))
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    print("MONGO URI I AM USING:", MONGO_URI)
+    client = MongoClient(MONGO_URI)
+    app.db = client[os.getenv("DB_NAME")]
 
     @login_manager.user_loader
     def load_user(user_id):
         db_user = app.db.users.find_one({"_id": ObjectId(user_id)})
         return User(db_user) if db_user else None
+    
+    try:
+        client.admin.command("ping")
+        print(" * Connected to MongoDB!")
+        print(" * Using DB:", app.db.name)
+        print(" * Users count:", app.db.users.count_documents({}))
+    except Exception as e:
+        print(" * MongoDB connection error:", e)
+
 
     @app.route("/")
     def index():
@@ -402,4 +414,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
