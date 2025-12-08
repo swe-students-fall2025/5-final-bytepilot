@@ -453,8 +453,6 @@ def create_app():
             })
         return jsonify({"ok": True, "forums": forums})
     
-
-        
     return app
 
 if __name__ == "__main__":
