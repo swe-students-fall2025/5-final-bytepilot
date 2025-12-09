@@ -189,23 +189,46 @@ def create_app(testing=False):
     @login_required
     def addcharacter():
         if request.method == 'GET':
-            return render_template("addcharacter.html")
+            char_id = request.args.get("id")
+            character = None
+            if char_id:
+                user = app.db.users.find_one(
+                    {"_id": ObjectId(current_user.id),
+                    "characters._id": ObjectId(char_id)},
+                    {"characters.$": 1}
+                )
+                if user and "characters" in user:
+                    character = user["characters"][0]
+            return render_template("addcharacter.html", character=character)
+        char_id = request.form.get("id")
         name = request.form.get("name", "Uknown character")
         nickname = request.form.get("nickname", name)
         fandom = request.form.get("fandom", "Original character")
         pic = request.form.get("pic", "/static/images/default.png")
-        character_id = ObjectId()
-        character = ({
-            "_id": character_id,
-            "name": name,
-            "nickname": nickname,
-            "fandom": fandom,
-            "pic": pic
-        })
-        app.db.users.update_one(
-            {"_id": ObjectId(current_user.id)},
-            {"$push": {"characters": character}}
-        )
+
+        if char_id:
+            app.db.users.update_one(
+                {"_id": ObjectId(current_user.id), "characters._id": ObjectId(char_id)},
+                {"$set": {
+                    "characters.$.name": name,
+                    "characters.$.nickname": nickname,
+                    "characters.$.fandom": fandom,
+                    "characters.$.pic": pic,
+                }}
+            )
+        else:
+            character_id = ObjectId()
+            character = ({
+                "_id": character_id,
+                "name": name,
+                "nickname": nickname,
+                "fandom": fandom,
+                "pic": pic
+            })
+            app.db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$push": {"characters": character}}
+            )
 
         return redirect(url_for("characters"))
     
