@@ -62,4 +62,9 @@
     </div>
 </div>
 {% endblock %}
-
+{% block extra_scripts %}
+<script>
+  window.DATABASE_CHARACTERS = '{{ db_characters | tojson | safe }}';
+</script>
+<script src="{{ url_for('static', filename='js/frontend.js') }}"></script>
+{% endblock %}

@@ -229,9 +229,25 @@ def create_app(testing=False):
                 {"_id": ObjectId(current_user.id)},
                 {"$push": {"characters": character}}
             )
-
+        
         return redirect(url_for("characters"))
     
+    @app.route("/api/db_characters")
+    @login_required
+    def api_db_characters():
+        user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+        char_doc = user.get("characters", [])
+        characters = []
+        for char in char_doc:
+            characters.append({
+                "_id": str(char.get("_id")),
+                "name": char.get("name", ""),
+                "nickname": char.get("nickname", ""),
+                "fandom": char.get("fandom", ""),
+                "pic": char.get("pic", "/static/images/default.png")
+            })
+        return jsonify({"ok": True, "characters": characters})
+
     @app.route("/deletecharacter/<char_id>", methods=['POST'])
     @login_required
     def deletecharacter(char_id):
