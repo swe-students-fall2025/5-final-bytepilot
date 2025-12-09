@@ -1165,7 +1165,7 @@ function renderForumsTable(forums) {
     if (!forums.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="empty-table-cell">
+                <td colspan="8" class="empty-table-cell">
                     No forums found. <a href="/createforum">Create your first forum</a> to get started!
                 </td>
             </tr>
@@ -1182,9 +1182,28 @@ function renderForumsTable(forums) {
         const statusBadge = forum.status === 'published'
             ? '<span class="status-badge published">Published</span>'
             : '<span class="status-badge draft">Draft</span>';
-        let charNames = 'N/A';
+        
+        // Get author username
+        const authorName = forum.author_username || 'Anonymous';
+        
+        // Get OP character
+        let opCharacter = 'N/A';
         if (Array.isArray(forum.characters) && forum.characters.length > 0) {
-            charNames = forum.characters[0]?.nickname || 'N/A';
+            opCharacter = forum.characters[0]?.nickname || forum.characters[0]?.name || 'N/A';
+        }
+        
+        // Get all characters
+        let charactersList = 'N/A';
+        if (Array.isArray(forum.characters) && forum.characters.length > 0) {
+            const characterNames = forum.characters.map(char => 
+                char.nickname || char.name
+            ).filter(name => name);
+            charactersList = characterNames.join(', ');
+            
+            // Truncate if too long
+            if (charactersList.length > 50) {
+                charactersList = charactersList.substring(0, 47) + '...';
+            }
         }
 
         const row = document.createElement('tr');
@@ -1194,7 +1213,9 @@ function renderForumsTable(forums) {
             <td class="col-title">
                 <a href="/viewthread/${forum.id}">${escapeHtml(forum.title)}</a>
             </td>
-            <td class="col-author">${escapeHtml(charNames)}</td>
+            <td class="col-author">${escapeHtml(authorName)}</td>
+            <td class="col-op">${escapeHtml(opCharacter)}</td>
+            <td class="col-characters" title="${escapeHtml(charactersList)}">${escapeHtml(charactersList)}</td>
             <td class="col-replies">${forum.post_count}</td>
             <td class="col-status">${statusBadge}</td>
             <td class="col-last">
@@ -1258,12 +1279,6 @@ function initForum() {
 
 
 function loadPublishedForums() {
-    /*
-    const allForums = JSON.parse(localStorage.getItem('forums') || '[]');
-    const publishedForums = allForums.filter(f => f.status === 'published');
-    const characters = JSON.parse(localStorage.getItem('characters') || '[]');
-    */
-    // use backend API to load published forums instead of localStorage
     const params = new URLSearchParams();
     if (searchTerm) {
         params.set('q', searchTerm);
@@ -1291,7 +1306,7 @@ function loadPublishedForums() {
             if (!publishedForums.length) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-table-cell">
+                        <td colspan="7" class="empty-table-cell">
                             No published forums yet. Be the first to publish a forum!
                         </td>
                     </tr>
@@ -1301,35 +1316,36 @@ function loadPublishedForums() {
         
             tbody.innerHTML = '';
             publishedForums.reverse().forEach(forum => {
-                /*
-                const postCount = forum.posts ? forum.posts.length : 0;
-                const publishedDate = forum.publishedAt 
-                    ? new Date(forum.publishedAt).toLocaleDateString()
-                    : new Date(forum.createdAt).toLocaleDateString();
-                
-                const charIndices = new Set();
-                if (forum.posts) {
-                    forum.posts.forEach(post => {
-                        if (post.characterIndex !== undefined) {
-                            charIndices.add(post.characterIndex);
-                        }
-                    });
-                }
-                const charNames = Array.from(charIndices).map(idx => {
-                    const char = characters[idx];
-                    return char ? char.name : 'Unknown';
-                }).join(', ') || 'N/A';
-                */
                 const postCount = forum.post_count || 0;
                 const publishedDate = forum.published_at 
                     ? new Date(forum.published_at).toLocaleDateString()
                     : forum.created_at
                         ? new Date(forum.created_at).toLocaleDateString()
                         : '';
-                let charNames = 'N/A';
+                
+                // Get author username
+                const authorName = forum.author_username || 'Anonymous';
+                
+                // Get OP character (first character or first post character)
+                let opCharacter = 'N/A';
                 if (Array.isArray(forum.characters) && forum.characters.length > 0) {
-                    charNames = forum.characters[0]?.nickname || 'N/A'; // OP only
+                    opCharacter = forum.characters[0]?.nickname || forum.characters[0]?.name || 'N/A';
                 }
+                
+                // Get all characters for this forum
+                let charactersList = 'N/A';
+                if (Array.isArray(forum.characters) && forum.characters.length > 0) {
+                    const characterNames = forum.characters.map(char => 
+                        char.nickname || char.name
+                    ).filter(name => name);
+                    charactersList = characterNames.join(', ');
+                    
+                    // Truncate if too long
+                    if (charactersList.length > 50) {
+                        charactersList = charactersList.substring(0, 47) + '...';
+                    }
+                }
+                
                 const row = document.createElement('tr');
                 row.className = 'thread-row';
                 row.innerHTML = `
@@ -1337,7 +1353,9 @@ function loadPublishedForums() {
                     <td class="col-title">
                         <a href="/viewthread/${forum.id}">${escapeHtml(forum.title)}</a>
                     </td>
-                    <td class="col-author">${escapeHtml(charNames)}</td>
+                    <td class="col-author">${escapeHtml(authorName)}</td>
+                    <td class="col-op">${escapeHtml(opCharacter)}</td>
+                    <td class="col-characters" title="${escapeHtml(charactersList)}">${escapeHtml(charactersList)}</td>
                     <td class="col-replies">${postCount}</td>
                     <td class="col-last">
                         <div>${publishedDate}</div>

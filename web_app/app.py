@@ -400,12 +400,22 @@ def create_app(testing=False):
         cursor = app.db.forums.find(query).sort("updated_at", -1)
         forums = []
         for doc in cursor:
+            # Get user info for consistency
+            user_id = doc.get("user_id")
+            author_username = "Anonymous"
+            
+            if user_id:
+                user = app.db.users.find_one({"_id": user_id})
+                if user:
+                    author_username = user.get("username", "Anonymous")
+
             forums.append({
                 "id": str(doc.get("_id")),
                 "title": doc.get("title", ""),
                 "status": doc.get("status", "draft"),
                 "post_count": len(doc.get("posts", [])),
                 "characters": doc.get("characters", []),
+                "author_username": author_username,  # Add this field
                 "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })
@@ -474,11 +484,21 @@ def create_app(testing=False):
 
         forums = []
         for t in cursor:
+            # Get user info from the user_id
+            user_id = t.get("user_id")
+            author_username = "Anonymous"
+            
+            if user_id:
+                user = app.db.users.find_one({"_id": user_id})
+                if user:
+                    author_username = user.get("username", "Anonymous")
+
             forums.append({
                 "id": str(t["_id"]),
                 "title": t.get("title", "Untitled"),
                 "post_count": len(t.get("posts", [])),
                 "characters": t.get("characters", []),
+                "author_username": author_username,  # Add this field
                 "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
                 "published_at": t.get("published_at").isoformat() if t.get("published_at") else None,
             })
@@ -494,11 +514,21 @@ def create_app(testing=False):
         cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
         forums = []
         for doc in cursor:
+            # Get user info
+            user_id = doc.get("user_id")
+            author_username = "Anonymous"
+            
+            if user_id:
+                user = app.db.users.find_one({"_id": user_id})
+                if user:
+                    author_username = user.get("username", "Anonymous")
+                    
             forums.append({
                 "id": str(doc.get("_id")),
                 "title": doc.get("title", ""),
                 "status": doc.get("status", "draft"),
                 "characters": doc.get("characters", []),
+                "author_username": author_username,  # Add this field
                 "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })
