@@ -1,3 +1,5 @@
+[![Web_app CI/CD](https://github.com/swe-students-fall2025/5-final-bytepilot/actions/workflows/ci.yml/badge.svg)](https://github.com/swe-students-fall2025/5-final-bytepilot/actions/workflows/ci.yml)
+
 # Forum Generator
 
 Forum Generator is a containerized system that allows users to create and manage virtual characters, automatically generating fan fiction dialogues with authentic forum styling. The system uses MongoDB to store character information and a Flask web application to provide the user interface and forum generation functionality.

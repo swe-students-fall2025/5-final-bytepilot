@@ -1075,3 +1075,371 @@ def test_deletecharacter_not_found(app_and_client):
     # Should still redirect but flash error message
     assert resp.status_code == 200
 
+
+# # Additional tests 2025/12/09
+
+
+# Tests using existing fixture pattern
+def test_create_app_testing_mode():
+    """Test create_app testing mode"""
+    app = create_app(testing=True)
+    assert app.config["TESTING"] == True
+    assert app.db is None
+
+def test_api_my_characters_empty(app_and_client):
+    """Test when the user has no character"""
+    app, client, fake_db = app_and_client
+    
+    # Create user and login
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.get("/api/my_characters")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ok"] == True
+    assert data["characters"] == []
+
+def test_delete_character_not_found(app_and_client):
+    """Test deleting non-existent characters"""
+    app, client, fake_db = app_and_client
+    
+    # Create user and login
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.post("/deletecharacter/507f1f77bcf86cd799439011")
+    assert response.status_code == 302  # redirect
+
+
+
+def test_createforum_empty_posts(app_and_client):
+    """Test Empty Post List"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with character
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": ObjectId(),
+            "name": "Test Character",
+            "nickname": "Test",
+            "fandom": "Test Fandom",
+            "pic": "/static/images/default.png"
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.post("/createforum", json={
+        "title": "Test Forum",
+        "posts": []
+    })
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["ok"] == False
+    assert "At least one post is required" in data["error"]
+
+def test_createforum_post_missing_content(app_and_client):
+    """Test post lacks content"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with character
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": ObjectId(),
+            "name": "Test Character",
+            "nickname": "Test",
+            "fandom": "Test Fandom",
+            "pic": "/static/images/default.png"
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.post("/createforum", json={
+        "title": "Test Forum",
+        "posts": [{"characterIndex": 0}]
+    })
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["ok"] == False
+    assert "Content required" in data["error"]
+
+def test_createforum_invalid_thread_id(app_and_client):
+    """Testing invalid thread IDs"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with character
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": ObjectId(),
+            "name": "Test Character",
+            "nickname": "Test",
+            "fandom": "Test Fandom",
+            "pic": "/static/images/default.png"
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.post("/createforum", json={
+        "id": "invalid_id",
+        "title": "Test Forum",
+        "posts": [{"characterIndex": 0, "content": "test"}]
+    })
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["ok"] == False
+    assert "Invalid thread id" in data["error"]
+
+def test_api_my_forum_not_found(app_and_client):
+    """Testing for non-existent forums"""
+    app, client, fake_db = app_and_client
+    
+    # Create user
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.get("/api/my_forums/507f1f77bcf86cd799439011")
+    assert response.status_code == 404
+    data = response.get_json()
+    assert data["ok"] == False
+    assert "Thread not found" in data["error"]
+
+
+
+def test_get_thread_invalid_id(app_and_client):
+    """test get_thread with invalid thread ID."""
+    app, client, fake_db = app_and_client
+    
+    resp = client.get("/api/thread/invalid-id")
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["ok"] is False
+    assert "Invalid thread id" in data["error"]
+
+def test_get_thread_not_found(app_and_client):
+    """test get_thread with non-existent thread ID."""
+    app, client, fake_db = app_and_client
+    
+    non_existent_id = "507f1f77bcf86cd799439999"
+    resp = client.get(f"/api/thread/{non_existent_id}")
+    assert resp.status_code == 404
+    data = resp.get_json()
+    assert data["ok"] is False
+    assert "Thread not found" in data["error"]
+
+def test_api_db_characters(app_and_client):
+    """test /api/db_characters endpoint"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with characters
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": ObjectId(),
+            "name": "Test Character",
+            "nickname": "Test",
+            "fandom": "Test Fandom",
+            "pic": "/static/images/default.png"
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.get("/api/db_characters")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ok"] == True
+    assert len(data["characters"]) == 1
+
+def test_characters_search(app_and_client):
+    """test character search functionality"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with characters
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": ObjectId(),
+            "name": "Hero Character",
+            "nickname": "Hero",
+            "fandom": "Hero Fandom",
+            "pic": "/static/images/default.png"
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    # search existing character
+    response = client.get("/characters?q=hero")
+    assert response.status_code == 200
+    
+    # search non-existent character
+    response = client.get("/characters?q=nonexistent")
+    assert response.status_code == 200
+
+def test_api_my_forums_search(app_and_client):
+    """test my forums search functionality"""
+    app, client, fake_db = app_and_client
+    
+    # Create user
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    # Create a thread for the user
+    thread_doc = {
+        "user_id": user_oid,
+        "title": "Test Thread Search",
+        "status": "published",
+        "posts": [],
+        "characters": [],
+        "updated_at": datetime.utcnow(),
+        "created_at": datetime.utcnow(),
+        "published_at": datetime.utcnow()
+    }
+    fake_db.forums.insert_one(thread_doc)
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    # search existing
+    response = client.get("/api/my_forums?q=Test")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ok"] == True
+    
+    # search non-existent
+    response = client.get("/api/my_forums?q=nonexistent")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ok"] == True
+
+def test_api_published_forums_search(app_and_client):
+    """test published forums search functionality"""
+    app, client, fake_db = app_and_client
+    
+    # Create a published forum
+    thread_doc = {
+        "user_id": ObjectId(),
+        "title": "Search Test Forum",
+        "status": "published",
+        "posts": [],
+        "characters": [],
+        "created_at": datetime.utcnow(),
+        "published_at": datetime.utcnow()
+    }
+    fake_db.forums.insert_one(thread_doc)
+    
+    # search existing
+    response = client.get("/api/published_forums?q=Search")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ok"] == True
+
+
+def test_addcharacter_post_edit(app_and_client):
+    """test editing an existing character"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with a character
+    char_id = ObjectId()
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": char_id,
+            "name": "Old Name",
+            "nickname": "Old Nick",
+            "fandom": "Old Fandom",
+            "pic": "/static/images/default.png"
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    # edit character
+    response = client.post("/addcharacter", data={
+        "id": str(char_id),
+        "name": "New Name",
+        "nickname": "New Nick",
+        "fandom": "New Fandom",
+        "pic": "/static/images/new.png"
+    })
+    assert response.status_code == 302  # redirect
+
