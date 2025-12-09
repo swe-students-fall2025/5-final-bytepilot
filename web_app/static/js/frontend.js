@@ -3,6 +3,7 @@ let selectedCharacters = [];
 let currentFilter = 'all';
 let currentSearchTerm = '';
 let searchTerm = ''; 
+let DATABASE_CHARACTERS = window.DATABASE_CHARACTERS || [];
 
 function $(id) {
     return document.getElementById(id);
@@ -438,9 +439,6 @@ function saveCharacter(name, fandom, nickname, pic) {
     }
 }
 */
-function editCharacter(index) {
-    alert('Edit functionality will be implemented. For now, please delete and recreate the character.');
-}
 /*
 function deleteCharacter(index) {
     if (!confirm('Are you sure you want to delete this character? This action cannot be undone.')) {
@@ -1719,32 +1717,42 @@ function initCreateForum() {
 }
 
 function initAddCharacter() {
-    const searchInput = document.getElementById('character-db-search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const query = this.value.trim();
-            if (query.length === 0) {
-                const resultsContainer = document.getElementById('character-db-search-results');
-                if (resultsContainer) {
-                    resultsContainer.classList.add('hidden');
-                }
+    fetch('/api/db_characters')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) {
+                console.warn('Failed to load db characters');
                 return;
             }
-            
-            const results = searchDatabaseCharacters(query);
-            displayDatabaseCharacterResults(results);
-        });
-        
-        document.addEventListener('click', function(e) {
-            const searchContainer = document.querySelector('.character-search-container');
-            if (searchContainer && !searchContainer.contains(e.target)) {
-                const results = document.getElementById('character-db-search-results');
-                if (results) {
-                    results.classList.add('hidden');
-                }
+            DATABASE_CHARACTERS = data.characters || [];
+            console.log('Loaded DATABASE_CHARACTERS:', DATABASE_CHARACTERS);
+            const searchInput = document.getElementById('character-db-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim();
+                    if (query.length === 0) {
+                        const resultsContainer = document.getElementById('character-db-search-results');
+                        if (resultsContainer) {
+                            resultsContainer.classList.add('hidden');
+                        }
+                        return;
+                    }
+                    
+                    const results = searchDatabaseCharacters(query);
+                    displayDatabaseCharacterResults(results);
+                });
+                
+                document.addEventListener('click', function(e) {
+                    const searchContainer = document.querySelector('.character-search-container');
+                    if (searchContainer && !searchContainer.contains(e.target)) {
+                        const results = document.getElementById('character-db-search-results');
+                        if (results) {
+                            results.classList.add('hidden');
+                        }
+                    }
+                });
             }
         });
-    }
     /*
     const form = document.getElementById('add-character-form');
     if (form) {

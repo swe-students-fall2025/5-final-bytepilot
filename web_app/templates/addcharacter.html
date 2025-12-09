@@ -19,6 +19,9 @@
         </div>
         
         <form class="auth-form-forum" action="{{ url_for('addcharacter') }}" method="post" enctype="multipart/form-data" id="add-character-form">
+            {% if character %}
+            <input type="hidden" name="id" value="{{ character._id }}">
+            {% endif %}
             <div class="form-group">
                 <label>Search Existing Character (Optional):</label>
                 <div class="character-search-container">
@@ -32,17 +35,17 @@
             
             <div class="form-group">
                 <label for="character-name">Character Name:</label>
-                <input type="text" id="character-name" name="name" required autofocus placeholder="Enter character name">
+                <input type="text" id="character-name" name="name" required autofocus placeholder="Enter character name" value="{{ character.name if character else '' }}">
             </div>
             
             <div class="form-group">
                 <label for="fandom">Fandom/Work:</label>
-                <input type="text" id="fandom" name="fandom" required placeholder="Enter fandom or work name">
+                <input type="text" id="fandom" name="fandom" required placeholder="Enter fandom or work name" value="{{ character.fandom if character else '' }}">
             </div>
             
             <div class="form-group">
                 <label for="nickname">Nickname (Forum Username):</label>
-                <input type="text" id="nickname" name="nickname" required placeholder="Enter forum username for this character">
+                <input type="text" id="nickname" name="nickname" required placeholder="Enter forum username for this character" value="{{ character.nickname if character else '' }}">
             </div>
             
             <div class="form-group">
@@ -59,4 +62,9 @@
     </div>
 </div>
 {% endblock %}
-
+{% block extra_scripts %}
+<script>
+  window.DATABASE_CHARACTERS = '{{ db_characters | tojson | safe }}';
+</script>
+<script src="{{ url_for('static', filename='js/frontend.js') }}"></script>
+{% endblock %}

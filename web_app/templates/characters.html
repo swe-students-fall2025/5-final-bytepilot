@@ -46,8 +46,12 @@
                         </div>
                     </div>
                     <div class="character-card-actions">
-                        {# you can wire this later if you add real editing #}
-                        <button class="btn btn-secondary btn-sm" type="button" disabled>Edit</button>
+                        <form method="GET"
+                            action="{{ url_for('addcharacter') }}"
+                            style="display:inline;">
+                            <input type="hidden" name="id" value="{{ char._id }}">
+                            <button class="btn btn-primary btn-sm" type="submit">Edit</button>
+                        </form>
 
                         <form method="POST"
                               action="{{ url_for('deletecharacter', char_id=char._id) }}"
