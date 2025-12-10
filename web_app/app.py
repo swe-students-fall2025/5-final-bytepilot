@@ -132,6 +132,7 @@ def create_app(testing=False):
         return render_template("profile.html", user = userdata)
     
     @app.route("/forum")
+    @login_required
     def forum():
         return render_template("forum.html")
     

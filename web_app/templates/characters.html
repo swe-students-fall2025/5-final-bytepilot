@@ -63,7 +63,7 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div style="text-align: center; padding: 40px; color: #999;">
+            <div class = "empty-message-center" style="grid-column: 1 / -1; text-align: center;">
                 No characters created yet. 
                 <a href="{{ url_for('addcharacter') }}">Create your first character</a> to get started!
             </div>
