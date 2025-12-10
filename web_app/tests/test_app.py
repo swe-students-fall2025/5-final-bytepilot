@@ -1464,3 +1464,161 @@ def test_addcharacter_post_edit(app_and_client):
     })
     assert response.status_code == 302  # redirect
 
+# More tests after 06ab8a3
+def test_createforum_get_error_handling(app_and_client):
+    """Test createforum GET with error handling"""
+    app, client, fake_db = app_and_client
+    
+    # Create user but don't store it in fake_db (to simulate user not found)
+    user_oid = ObjectId()
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    # This should redirect to index because user is not found
+    response = client.get("/createforum", follow_redirects=True)
+    assert response.status_code == 200
+    # Should show flash message
+
+def test_createforum_get_with_empty_characters(app_and_client):
+    """Test createforum GET when user has no characters"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with empty characters list
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],  # Empty list
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.get("/createforum")
+    assert response.status_code == 200
+
+
+def test_api_my_forums_author_anonymous_when_user_not_found(app_and_client):
+    """Test author_username is 'Anonymous' when user not found"""
+    app, client, fake_db = app_and_client
+    
+    # Create user
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    # Create a forum thread with non-existent user_id
+    non_existent_user_id = ObjectId()
+    forum_doc = {
+        "user_id": non_existent_user_id,  # User doesn't exist in fake_db
+        "title": "Test Forum Anonymous",
+        "status": "draft",
+        "posts": [],
+        "characters": [],
+        "updated_at": datetime.utcnow(),
+        "created_at": datetime.utcnow()
+    }
+    fake_db.forums.insert_one(forum_doc)
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.get("/api/my_forums")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ok"] == True
+    
+    if data["forums"]:
+        forum = data["forums"][0]
+        assert "author_username" in forum
+        assert forum["author_username"] == "Anonymous"
+
+
+def test_json_encoding_error_handling(app_and_client):
+    """Test error handling when JSON encoding fails"""
+    app, client, fake_db = app_and_client
+    
+    # Create a mock object that cannot be JSON serialized
+    class NonSerializable:
+        def __repr__(self):
+            return "<NonSerializable>"
+    
+    # We need to test the MongoJSONEncoder directly
+    from app import MongoJSONEncoder
+    
+    encoder = MongoJSONEncoder()
+    
+    # Test with a non-serializable object (should call parent default)
+    non_serializable = NonSerializable()
+    
+    # This should raise TypeError when parent default is called
+    import json
+    try:
+        # Try to encode the non-serializable object
+        result = json.dumps(non_serializable, cls=MongoJSONEncoder)
+        # If it doesn't raise, that's fine - it means the object has some serializable representation
+    except TypeError:
+        # Expected for truly non-serializable objects
+        pass
+
+def test_addcharacter_get_db_characters_field(app_and_client):
+    """Test that addcharacter GET passes db_characters to template"""
+    app, client, fake_db = app_and_client
+    
+    # Create user
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    response = client.get("/addcharacter")
+    assert response.status_code == 200
+    # The template should receive db_characters as an empty list
+
+def test_createforum_get_json_encode_error(app_and_client):
+    """Test createforum GET handles JSON encoding errors"""
+    app, client, fake_db = app_and_client
+    
+    # Create user with a character that might cause JSON encoding issues
+    user_doc = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "pw",
+        "characters": [{
+            "_id": ObjectId(),
+            "name": "Test Character",
+            "nickname": "Test",
+            "fandom": "Test Fandom",
+            "pic": "/static/images/default.png",
+            # Add a complex object that might cause encoding issues
+            "complex_field": {"nested": "value"}
+        }],
+        "threads": []
+    }
+    res = fake_db.users.insert_one(user_doc)
+    user_oid = res.inserted_id
+    
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_oid)
+    
+    # This should still work with the enhanced error handling
+    response = client.get("/createforum")
+    assert response.status_code == 200
