@@ -1165,6 +1165,7 @@ function renderForumsTable(forums) {
     if (!forums.length) {
         tbody.innerHTML = `
             <tr>
+                <!-- 注意：这里是8列，不是7列，因为还有Actions列 -->
                 <td colspan="8" class="empty-table-cell">
                     No forums found. <a href="/createforum">Create your first forum</a> to get started!
                 </td>
@@ -1192,19 +1193,18 @@ function renderForumsTable(forums) {
             opCharacter = forum.characters[0]?.nickname || forum.characters[0]?.name || 'N/A';
         }
         
-        // Get all characters
-        let charactersList = 'N/A';
-        if (Array.isArray(forum.characters) && forum.characters.length > 0) {
-            const characterNames = forum.characters.map(char => 
-                char.nickname || char.name
-            ).filter(name => name);
-            charactersList = characterNames.join(', ');
-            
-            // Truncate if too long
-            if (charactersList.length > 50) {
-                charactersList = charactersList.substring(0, 47) + '...';
-            }
-        }
+        // 删除以下代码，因为不再需要charactersList：
+        // let charactersList = 'N/A';
+        // if (Array.isArray(forum.characters) && forum.characters.length > 0) {
+        //     const characterNames = forum.characters.map(char => 
+        //         char.nickname || char.name
+        //     ).filter(name => name);
+        //     charactersList = characterNames.join(', ');
+        //     
+        //     if (charactersList.length > 50) {
+        //         charactersList = charactersList.substring(0, 47) + '...';
+        //     }
+        // }
 
         const row = document.createElement('tr');
         row.className = 'thread-row';
@@ -1215,7 +1215,6 @@ function renderForumsTable(forums) {
             </td>
             <td class="col-author">${escapeHtml(authorName)}</td>
             <td class="col-op">${escapeHtml(opCharacter)}</td>
-            <td class="col-characters" title="${escapeHtml(charactersList)}">${escapeHtml(charactersList)}</td>
             <td class="col-replies">${forum.post_count}</td>
             <td class="col-status">${statusBadge}</td>
             <td class="col-last">
@@ -1355,7 +1354,6 @@ function loadPublishedForums() {
                     </td>
                     <td class="col-author">${escapeHtml(authorName)}</td>
                     <td class="col-op">${escapeHtml(opCharacter)}</td>
-                    <td class="col-characters" title="${escapeHtml(charactersList)}">${escapeHtml(charactersList)}</td>
                     <td class="col-replies">${postCount}</td>
                     <td class="col-last">
                         <div>${publishedDate}</div>
