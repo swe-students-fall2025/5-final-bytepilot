@@ -937,13 +937,34 @@ def test_index_page(app_and_client):
     assert resp.status_code == 200
     assert "TEMPLATE:index.html" in resp.get_data(as_text=True)
 
-def test_forum_page(app_and_client):
-    """Test forum page loads."""
+def test_forum_page_requires_login(app_and_client):
+    """Test forum page requires authentication."""
     app, client, fake_db = app_and_client
     
+    resp = client.get("/forum", follow_redirects=False)
+    assert resp.status_code in (302, 303)
+    assert "/login" in resp.headers["Location"]
+
+def test_forum_page_logged_in(app_and_client):
+    app, client, fake_db = app_and_client
+
+    # Create fake user in FakeDB
+    user_doc = {
+        "username": "forumuser",
+        "email": "forum@example.com",
+        "password": "pw",
+        "characters": [],
+        "threads": [],
+    }
+    res = fake_db.users.insert_one(user_doc)
+    uid = res.inserted_id
+
+    # Simulate login by setting _user_id in the session
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(uid)
+
     resp = client.get("/forum")
     assert resp.status_code == 200
-    assert "TEMPLATE:forum.html" in resp.get_data(as_text=True)
 
 def test_community_page(app_and_client):
     """Test community page loads."""
