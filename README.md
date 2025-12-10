@@ -3,48 +3,59 @@
 
 # Forum Generator
 
-Forum Generator is a containerized system that allows users to create and manage virtual characters, automatically generating fan fiction dialogues with authentic forum styling. The system uses MongoDB to store character information and a Flask web application to provide the user interface and forum generation functionality.
+Forum Generator is a Flask + MongoDB web app that lets fans create original characters, draft forum-style dialogue threads, and publish them for others to browse. The UI handles authentication, character management, thread editing/publishing, and community discovery, while MongoDB stores user, character, and forum data.
+Forum Generator is a Flask + MongoDB web app for staging forum-style fanfiction with existing characters. Users authenticate, manage character profiles, compose multi-character threads, save drafts, publish, and browse the community feed. Everything is containerized and shipped via GitHub Actions to Docker Hub and a DigitalOcean droplet.
 
-## Subsystems
-- **Web App (Flask + Gunicorn)**  
-  - Container built from `web_app/Dockerfile` and served on port `5001`.  
-  - Docker Hub image: [`forum-generator-web`](https://hub.docker.com/r/<dockerhub-username>/forum-generator-web) (pushed by the CI/CD pipeline).  
-  - CI/CD workflows: `web-app-cicd.yml` (build/push/deploy) and `ci.yml` (PR test gate).
-- **MongoDB**  
-  - Stores users, characters, and forum threads.  
-  - Use the provided MongoDB Atlas URI in `.env`, or run a local container (see setup below). Official image: [`mongo:7`](https://hub.docker.com/_/mongo).
+## System components
+- **Web App (Flask + Gunicorn, port 5001)** — UI, auth, character management, thread creation/publishing. Containerized via `web_app/Dockerfile`; image target `docker.io/<DOCKERHUB_USERNAME>/forum-generator-web`.
+- **MongoDB** — stores users, characters, and threads. Use MongoDB Atlas or a local `mongo:7` container; supply connectivity through `MONGO_URI`.
+- **CI/CD** — GitHub Actions pipelines for pull-request testing and main-branch build/push/deploy.
 
-## What you can do
-- Register/login and manage a profile.
-- Create, edit, and delete characters (names, nicknames, fandom, avatars).
-- Compose multi-character forum threads, save drafts, and publish.
-- Browse your own threads or the community feed of published forums.
+## Tech stack
+- Python 3.11, Flask, Flask-Login, PyMongo
+- MongoDB (Atlas or local container)
+- Docker / docker-compose, Gunicorn
+- GitHub Actions, DigitalOcean droplet
 
-## Prerequisites
-- Python 3.11+
-- Docker + Docker Compose plugin (for containerized runs)
-- Access to a MongoDB instance (Atlas URI or a local Mongo container)
+## Repository map
+- `web_app/` — Flask application, templates, static assets, tests, Dockerfile.
+- `.github/workflows/` — CI/CD pipelines (`ci.yml`, `web-app-cicd.yml`, `event-logger.yml`).
+- `docker-compose.yml` — starts the web app container (expects external MongoDB via `MONGO_URI`).
+- `Procfile` — gunicorn entry for hosted environments.
 
 ## Configuration (.env)
-The app reads environment variables from the repository root via `python-dotenv` and `docker-compose`:
+This project uses a `.env` file for database and Azure configuration. An example file is provided as `web_app/env.example` with dummy values; the actual `.env` values will be sent to graders directly. Place `.env` at the repo root so Flask, docker-compose, and CI/CD can read it. Required keys mirror the example: `SECRET_KEY`, `MONGO_URI`, `DB_NAME`, and optionally `FLASK_ENV`/`PORT`.
+
+<<<<<<< Updated upstream
+```
+SECRET_KEY=change_me
+MONGO_URI=mongodb://forum_user:forum_pass@localhost:27017/forum_db?authSource=admin
+DB_NAME=forum_db
+FLASK_ENV=development
+```
 
 - Start from `web_app/env.example`, copy it to `.env` in the repo root, and adjust values.  
 - For container-to-container networking, set `MONGO_URI=mongodb://forum_user:forum_pass@mongo:27017/forum_db?authSource=admin`.  
 - CI/CD expects a multi-line secret `WEB_APP_ENV_FILE` that contains the same key/value pairs used in `.env`.
-- For MongoDB Atlas, copy the `.env` file from our team channel.
+=======
+## Prerequisites
+- Python 3.11+, pip
+- Access to MongoDB (Atlas URI or local container); ensure ports 27017 and 5001 are free
+- Docker Engine + Compose plugin (for containerized runs)
+>>>>>>> Stashed changes
 
 ## Run locally (Python)
 ```bash
 git clone https://github.com/swe-students-fall2025/5-final-bytepilot.git
 cd 5-final-bytepilot
-python -m venv .venv && source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 python -m pip install -r web_app/requirements.txt
-# Ensure MongoDB is reachable (Atlas URI in .env, or start a local container per below)
+# Ensure .env is present at repo root and MongoDB is reachable (Atlas or local)
 python web_app/app.py   # or: flask --app web_app.app run --port 5001
 ```
-Open http://localhost:5001 and register your first user. Data is stored in the configured MongoDB database; no seed data is required.
+Open http://localhost:5001 after the server starts.
 
-### Optional: run MongoDB locally with Docker
+### Run MongoDB locally (optional)
 ```bash
 docker run -d --name forum-mongo -p 27017:27017 \
   -e MONGO_INITDB_ROOT_USERNAME=forum_user \
@@ -52,34 +63,29 @@ docker run -d --name forum-mongo -p 27017:27017 \
   -e MONGO_INITDB_DATABASE=forum_db \
   mongo:7.0 --auth
 ```
-Use `MONGO_URI=mongodb://forum_user:forum_pass@localhost:27017/forum_db?authSource=admin` for local Python runs. If you connect from inside a Docker container, use `mongo` as the host when both containers share a network, or `host.docker.internal`/`172.17.0.1` when targeting the host port.
+Set `MONGO_URI` to point at this instance. If the web app runs inside Docker on the same network, use `mongo` as the host; if running on the host, use `localhost` or `127.0.0.1`.
 
 ## Run with Docker / Compose
 ```bash
-# 1) Build and start the web app container (uses .env for settings)
 docker compose up --build
-
-# 2) Provide MongoDB:
-#    - Atlas: set MONGO_URI in .env to your cluster URI.
-#    - Local container: start mongo as shown above and set MONGO_URI to point to it.
 ```
-By default the web app is served on http://localhost:5001. The `docker-compose.yml` uses the `.env` file at the repo root for configuration.
+`docker-compose.yml` starts the web app container and reads `.env` from the repo root. You must provide a reachable MongoDB (Atlas or the local container above) via `MONGO_URI`.
 
-## Tests and coverage
+## Testing and coverage
 ```bash
 cd web_app
 python -m pip install -r requirements.txt
-export SECRET_KEY=test-secret-key-for-ci  # required for Flask-Login session
+export SECRET_KEY=test-secret-key-for-ci
 pytest --cov=app --cov-report=term-missing
 ```
-The suite targets 80%+ coverage and mirrors what runs in CI.
+Targets ≥80% coverage; this is the same command used in CI.
 
 ## CI/CD and deployment
-- **PR CI (`ci.yml`)**: runs tests on every pull request.  
-- **Web App CI/CD (`web-app-cicd.yml`)**: on push to `main`/`master`, runs tests, builds/pushes the Docker image to Docker Hub, and deploys to a DigitalOcean droplet via SSH.  
-- **Event logger (`event-logger.yml`)**: optional workflow that records repo events when `COMMIT_LOG_API` is configured.
+- **PR CI (`ci.yml`)** — runs tests on pull requests.  
+- **Web App CI/CD (`web-app-cicd.yml`)** — on push to `main`/`master`: tests → build/push Docker image → deploy to DigitalOcean via SSH.  
+- **Event logger (`event-logger.yml`)** — optional workflow logging repo activity when `COMMIT_LOG_API` is set.
 
-Deployment secrets expected in GitHub Actions:
+GitHub Actions secrets expected:
 ```
 DOCKERHUB_USERNAME
 DOCKERHUB_TOKEN
@@ -89,6 +95,14 @@ DO_SSH_PRIVATE_KEY
 WEB_APP_ENV_FILE   # contents of the .env used on the droplet
 COMMIT_LOG_API     # optional, for event-logger workflow
 ```
+
+## Operations
+- Default web port: 5001 (configurable via `.env`/`PORT`).
+- Default Mongo port: 27017 (when using local container).
+- Health: Flask app responds on `/` and static assets under `/static`; API endpoints under `/api/*` for thread and character data.
+
+## Data and seeding
+No starter data required. User, character, and thread documents are created during normal use.
 
 ## Team
 - [May Zhou](https://github.com/zz4206)
