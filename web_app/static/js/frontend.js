@@ -1193,7 +1193,7 @@ function renderForumsTable(forums) {
             opCharacter = forum.characters[0]?.nickname || forum.characters[0]?.name || 'N/A';
         }
         
-        // 删除以下代码，因为不再需要charactersList：
+        // delete charactersList：
         // let charactersList = 'N/A';
         // if (Array.isArray(forum.characters) && forum.characters.length > 0) {
         //     const characterNames = forum.characters.map(char => 
