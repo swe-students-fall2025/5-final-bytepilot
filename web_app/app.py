@@ -189,19 +189,27 @@ def create_app(testing=False):
     @login_required
     def addcharacter():
         if request.method == 'GET':
-            char_id = request.args.get("id")
-            character = None
-            if char_id:
-                user = app.db.users.find_one(
-                    {"_id": ObjectId(current_user.id),
-                    "characters._id": ObjectId(char_id)},
-                    {"characters.$": 1}
-                )
-                if user and "characters" in user:
-                    character = user["characters"][0]
-            # Pass db_characters to template (empty list since JS fetches from API)
-            db_characters = []
-            return render_template("addcharacter.html", character=character, db_characters=db_characters)
+            try:
+                char_id = request.args.get("id")
+                character = None
+                if char_id:
+                    try:
+                        user = app.db.users.find_one(
+                            {"_id": ObjectId(current_user.id),
+                            "characters._id": ObjectId(char_id)},
+                            {"characters.$": 1}
+                        )
+                        if user and "characters" in user:
+                            character = user["characters"][0]
+                    except Exception as e:
+                        print(f"ERROR loading character {char_id}: {e}", flush=True)
+                # Pass db_characters to template (empty list since JS fetches from API)
+                db_characters = []
+                return render_template("addcharacter.html", character=character, db_characters=db_characters)
+            except Exception as e:
+                print(f"ERROR in addcharacter GET: {e}", flush=True)
+                flash("An error occurred loading the page.")
+                return redirect(url_for("characters"))
         char_id = request.form.get("id")
         name = request.form.get("name", "Uknown character")
         nickname = request.form.get("nickname", name)
@@ -365,29 +373,34 @@ def create_app(testing=False):
             return jsonify({"ok": True, "id": str(thread.inserted_id)})
                 
         else:
-            user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
-            if not user:
-                flash("User not found.")
-                return redirect(url_for("index"))
-            
-            characters = user.get("characters", [])
-            if characters is None:
-                characters = []
-
-            # --- DEBUGGING LINES ---
-            print(f"DEBUG: Current User ID: {current_user.id}", flush=True)
-            print(f"DEBUG: Raw Characters found in DB: {len(characters)}", flush=True)
-            print(f"DEBUG: First character data: {characters[0] if characters else 'None'}", flush=True)
-
             try:
-                characters_json_string = json.dumps(characters, cls=MongoJSONEncoder)
-            except Exception as e:
-                print(f"ERROR: Failed to encode characters to JSON: {e}", flush=True)
-                characters_json_string = "[]"
-            
-            app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
+                user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+                if not user:
+                    flash("User not found.")
+                    return redirect(url_for("index"))
+                
+                characters = user.get("characters", [])
+                if characters is None:
+                    characters = []
 
-            return render_template("createforum.html", characters=characters, characters_json=characters_json_string)
+                # --- DEBUGGING LINES ---
+                print(f"DEBUG: Current User ID: {current_user.id}", flush=True)
+                print(f"DEBUG: Raw Characters found in DB: {len(characters)}", flush=True)
+                print(f"DEBUG: First character data: {characters[0] if characters else 'None'}", flush=True)
+
+                try:
+                    characters_json_string = json.dumps(characters, cls=MongoJSONEncoder)
+                except Exception as e:
+                    print(f"ERROR: Failed to encode characters to JSON: {e}", flush=True)
+                    characters_json_string = "[]"
+                
+                app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
+
+                return render_template("createforum.html", characters=characters, characters_json=characters_json_string)
+            except Exception as e:
+                print(f"ERROR in createforum GET: {e}", flush=True)
+                flash("An error occurred loading the page.")
+                return redirect(url_for("index"))
     
     @app.route("/api/my_forums")
     @login_required
