@@ -1465,19 +1465,12 @@ function initViewThread() {
             collectBtn.textContent = '★ Collect';
             postFooter.appendChild(collectBtn);
         }
-        const likeBtn = document.createElement('button');
-        likeBtn.className = 'post-action';
-        likeBtn.textContent = '👍 Like';
-        postFooter.appendChild(likeBtn);
-        const replyLink = document.createElement('a');
-        replyLink.href = '#';
-        replyLink.className = 'post-action';
-        replyLink.textContent = 'Reply';
-        postFooter.appendChild(replyLink);
         
         contentArea.appendChild(postHeader);
         contentArea.appendChild(postBody);
-        contentArea.appendChild(postFooter);
+        if (isOP) {
+            contentArea.appendChild(postFooter);
+        }
         
         postItem.appendChild(sidebar);
         postItem.appendChild(contentArea);
@@ -1567,10 +1560,7 @@ function renderThread(thread) {
             <div class="post-body">
                 ${escapeHtml(post.content).replace(/\n/g, '<br>')}
             </div>
-            <div class="post-footer">
-                <button class="post-action">👍 Like</button>
-                <a href="#" class="post-action">Reply</a>
-            </div>
+            ${isOP ? '<div class="post-footer"><button class="post-action">★ Collect</button></div>' : ''}
         `;
 
         postItem.appendChild(sidebar);
