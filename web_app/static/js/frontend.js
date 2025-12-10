@@ -1021,10 +1021,10 @@ function initIndex() {
 
             if (!forums.length) {
                 forumsList.innerHTML = `
-                    <div class="empty-message">
+                    <p class="empty-message-center">
                         No forums created yet.
                         <a href="/createforum">Create your first forum</a> to get started!
-                    </div>
+                    </p>
                 `;
                 return;
             }

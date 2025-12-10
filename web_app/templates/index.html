@@ -26,7 +26,7 @@
 
     <div class="forum-category">
         <div class="category-header">
-            <h3>My Forums</h3>
+            <h3><a href="{{ url_for('forum') }}" {% if request.endpoint == 'forum' %}class="active"{% endif %}>My Forums</a></h3>
             <div class="category-stats">
                 <span>Forums: <span id="forum-count">0</span></span>
             </div>
@@ -35,13 +35,17 @@
             View and manage your generated fan fiction forum dialogues
         </div>
         <div id="forums-list" class="forums-list">
+            {% if current_user.is_authenticated %}
             <p class="empty-message-center">No forums created yet. <a href="/createforum">Create your first forum</a> to get started!</p>
+            {% else %}
+            <p class="empty-message-center">Please <a href="{{ url_for('login') }}">log in</a> to create and manage your forums.</p>
+            {% endif %}
         </div>
     </div>
     
     <div class="forum-section forum-section-spaced">
         <div class="section-header">
-            <h2>Community</h2>
+            <h2><a href="{{ url_for('community') }}" {% if request.endpoint == 'community' %}class="active"{% endif %}>Community</a></h2>
             <div class="section-actions">
                 <a href="/community" class="btn btn-primary">View All</a>
             </div>
