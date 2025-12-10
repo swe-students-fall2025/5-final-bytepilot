@@ -1165,7 +1165,6 @@ function renderForumsTable(forums) {
     if (!forums.length) {
         tbody.innerHTML = `
             <tr>
-                <!-- 注意：这里是8列，不是7列，因为还有Actions列 -->
                 <td colspan="8" class="empty-table-cell">
                     No forums found. <a href="/createforum">Create your first forum</a> to get started!
                 </td>
@@ -1331,19 +1330,7 @@ function loadPublishedForums() {
                     opCharacter = forum.characters[0]?.nickname || forum.characters[0]?.name || 'N/A';
                 }
                 
-                // Get all characters for this forum
-                let charactersList = 'N/A';
-                if (Array.isArray(forum.characters) && forum.characters.length > 0) {
-                    const characterNames = forum.characters.map(char => 
-                        char.nickname || char.name
-                    ).filter(name => name);
-                    charactersList = characterNames.join(', ');
-                    
-                    // Truncate if too long
-                    if (charactersList.length > 50) {
-                        charactersList = charactersList.substring(0, 47) + '...';
-                    }
-                }
+                
                 
                 const row = document.createElement('tr');
                 row.className = 'thread-row';
