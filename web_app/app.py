@@ -190,17 +190,27 @@ def create_app(testing=False):
     @login_required
     def addcharacter():
         if request.method == 'GET':
-            char_id = request.args.get("id")
-            character = None
-            if char_id:
-                user = app.db.users.find_one(
-                    {"_id": ObjectId(current_user.id),
-                    "characters._id": ObjectId(char_id)},
-                    {"characters.$": 1}
-                )
-                if user and "characters" in user:
-                    character = user["characters"][0]
-            return render_template("addcharacter.html", character=character)
+            try:
+                char_id = request.args.get("id")
+                character = None
+                if char_id:
+                    try:
+                        user = app.db.users.find_one(
+                            {"_id": ObjectId(current_user.id),
+                            "characters._id": ObjectId(char_id)},
+                            {"characters.$": 1}
+                        )
+                        if user and "characters" in user:
+                            character = user["characters"][0]
+                    except Exception as e:
+                        print(f"ERROR loading character {char_id}: {e}", flush=True)
+                # Pass db_characters to template (empty list since JS fetches from API)
+                db_characters = []
+                return render_template("addcharacter.html", character=character, db_characters=db_characters)
+            except Exception as e:
+                print(f"ERROR in addcharacter GET: {e}", flush=True)
+                flash("An error occurred loading the page.")
+                return redirect(url_for("characters"))
         char_id = request.form.get("id")
         name = request.form.get("name", "Uknown character")
         nickname = request.form.get("nickname", name)
@@ -364,19 +374,34 @@ def create_app(testing=False):
             return jsonify({"ok": True, "id": str(thread.inserted_id)})
                 
         else:
-            user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
-            characters = user.get("characters", [])
+            try:
+                user = app.db.users.find_one({"_id": ObjectId(current_user.id)})
+                if not user:
+                    flash("User not found.")
+                    return redirect(url_for("index"))
+                
+                characters = user.get("characters", [])
+                if characters is None:
+                    characters = []
 
-            # --- DEBUGGING LINES ---
-            print(f"DEBUG: Current User ID: {current_user.id}", flush=True)
-            print(f"DEBUG: Raw Characters found in DB: {len(characters)}", flush=True)
-            print(f"DEBUG: First character data: {characters[0] if characters else 'None'}", flush=True)
+                # --- DEBUGGING LINES ---
+                print(f"DEBUG: Current User ID: {current_user.id}", flush=True)
+                print(f"DEBUG: Raw Characters found in DB: {len(characters)}", flush=True)
+                print(f"DEBUG: First character data: {characters[0] if characters else 'None'}", flush=True)
 
-            characters_json_string = json.dumps(characters, cls=app.json_encoder)
-            
-            app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
+                try:
+                    characters_json_string = json.dumps(characters, cls=MongoJSONEncoder)
+                except Exception as e:
+                    print(f"ERROR: Failed to encode characters to JSON: {e}", flush=True)
+                    characters_json_string = "[]"
+                
+                app.logger.info(f"Generated JSON string length: {len(characters_json_string)}")
 
-            return render_template("createforum.html", characters=characters, characters_json=characters_json_string)
+                return render_template("createforum.html", characters=characters, characters_json=characters_json_string)
+            except Exception as e:
+                print(f"ERROR in createforum GET: {e}", flush=True)
+                flash("An error occurred loading the page.")
+                return redirect(url_for("index"))
     
     @app.route("/api/my_forums")
     @login_required
@@ -401,12 +426,22 @@ def create_app(testing=False):
         cursor = app.db.forums.find(query).sort("updated_at", -1)
         forums = []
         for doc in cursor:
+            # Get user info for consistency
+            user_id = doc.get("user_id")
+            author_username = "Anonymous"
+            
+            if user_id:
+                user = app.db.users.find_one({"_id": user_id})
+                if user:
+                    author_username = user.get("username", "Anonymous")
+
             forums.append({
                 "id": str(doc.get("_id")),
                 "title": doc.get("title", ""),
                 "status": doc.get("status", "draft"),
                 "post_count": len(doc.get("posts", [])),
                 "characters": doc.get("characters", []),
+                "author_username": author_username,  # Add this field
                 "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })
@@ -475,11 +510,21 @@ def create_app(testing=False):
 
         forums = []
         for t in cursor:
+            # Get user info from the user_id
+            user_id = t.get("user_id")
+            author_username = "Anonymous"
+            
+            if user_id:
+                user = app.db.users.find_one({"_id": user_id})
+                if user:
+                    author_username = user.get("username", "Anonymous")
+
             forums.append({
                 "id": str(t["_id"]),
                 "title": t.get("title", "Untitled"),
                 "post_count": len(t.get("posts", [])),
                 "characters": t.get("characters", []),
+                "author_username": author_username,  # Add this field
                 "created_at": t.get("created_at").isoformat() if t.get("created_at") else None,
                 "published_at": t.get("published_at").isoformat() if t.get("published_at") else None,
             })
@@ -495,11 +540,21 @@ def create_app(testing=False):
         cursor = app.db.forums.find({"status": "published"}).sort("published_at", -1)
         forums = []
         for doc in cursor:
+            # Get user info
+            user_id = doc.get("user_id")
+            author_username = "Anonymous"
+            
+            if user_id:
+                user = app.db.users.find_one({"_id": user_id})
+                if user:
+                    author_username = user.get("username", "Anonymous")
+                    
             forums.append({
                 "id": str(doc.get("_id")),
                 "title": doc.get("title", ""),
                 "status": doc.get("status", "draft"),
                 "characters": doc.get("characters", []),
+                "author_username": author_username,  # Add this field
                 "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
                 "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
             })

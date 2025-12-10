@@ -79,15 +79,13 @@
 </script>
 
 <script>
-    window.WINDOW_CHARACTERS_DATA_STRING = '{{ characters_json | tojson | safe }}';
-    // Now we parse this clean string.
+    // characters_json is already a valid JSON string from json.dumps()
     try {
-        window.WINDOW_CHARACTERS_DATA = JSON.parse(window.WINDOW_CHARACTERS_DATA_STRING);
+        window.WINDOW_CHARACTERS_DATA = {{ characters_json | safe }};
     } catch (e) {
         console.error("Failed to parse characters data in template:", e);
         window.WINDOW_CHARACTERS_DATA = [];
     }
-</script>
 
 <script>
     const dataElement = document.getElementById('characters-data');
