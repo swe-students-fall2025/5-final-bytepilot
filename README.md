@@ -1,98 +1,97 @@
+# BytePilot — Forum-Style Dialogue Creator
+
+**Create fictional characters, compose multi-character conversations, and publish them as forum-style threads.**
+
 [![Web App CI/CD](https://github.com/swe-students-fall2025/5-final-bytepilot/actions/workflows/web-app-cicd.yml/badge.svg)](https://github.com/swe-students-fall2025/5-final-bytepilot/actions/workflows/web-app-cicd.yml)
 [![PR CI](https://github.com/swe-students-fall2025/5-final-bytepilot/actions/workflows/ci.yml/badge.svg)](https://github.com/swe-students-fall2025/5-final-bytepilot/actions/workflows/ci.yml)
 
-# Forum Generator
+BytePilot, called **Forum Generator** in the original course documentation, is a Flask + MongoDB creative-writing application. Users author the dialogue and arrange it into a forum presentation; the current implementation does not require an LLM or an AI API key.
 
-Forum Generator is a containerized system that allows users to create and manage virtual characters, automatically generating fan fiction dialogues with authentic forum styling. The system uses MongoDB to store character information and a Flask web application to provide the user interface and forum generation functionality.
+## User journey
 
-## Subsystems
-- **Web App (Flask + Gunicorn)**  
-  - Container built from `web_app/Dockerfile` and served on port `5001`.  
-  - Docker Hub image: [`forum-generator-web`](https://hub.docker.com/r/<dockerhub-username>/forum-generator-web) (pushed by the CI/CD pipeline).  
-  - CI/CD workflows: `web-app-cicd.yml` (build/push/deploy) and `ci.yml` (PR test gate).
-- **MongoDB**  
-  - Stores users, characters, and forum threads.  
-  - Use the provided MongoDB Atlas URI in `.env`, or run a local container (see setup below). Official image: [`mongo:7`](https://hub.docker.com/_/mongo).
+**Register → create characters → compose a thread → save a draft or publish → browse the community.**
 
-## What you can do
-- Register/login and manage a profile.
-- Create, edit, and delete characters (names, nicknames, fandom, avatars).
-- Compose multi-character forum threads, save drafts, and publish.
-- Browse your own threads or the community feed of published forums.
+| Character management | Thread creation |
+| --- | --- |
+| ![BytePilot character management with fictional demo characters](docs/media/characters.png) | ![BytePilot forum composer running locally](docs/media/composer.png) |
 
-## Prerequisites
-- Python 3.11+
-- Docker + Docker Compose plugin (for containerized runs)
-- Access to a MongoDB instance (Atlas URI or a local Mongo container)
+![Published forum-style dialogue in BytePilot](docs/media/thread.png)
 
-## Configuration (.env)
-The app reads environment variables from the repository root via `python-dotenv` and `docker-compose`:
+Screenshots were captured from the real application running locally with fictional demo users and an isolated in-memory database. They show the product flow without access to the course team's database.
 
-- Start from `web_app/env.example`, copy it to `.env` in the repo root, and adjust values.  
-- For container-to-container networking, set `MONGO_URI=mongodb://forum_user:forum_pass@mongo:27017/forum_db?authSource=admin`.  
-- CI/CD expects a multi-line secret `WEB_APP_ENV_FILE` that contains the same key/value pairs used in `.env`.
-- For MongoDB Atlas, copy the `.env` file from our team channel.
+## What it demonstrates
 
-## Run locally (Python)
+| Capability | Concrete implementation |
+| --- | --- |
+| End-to-end product flow | Accounts, character creation, dialogue composition, draft/published states and community browsing |
+| Full-stack development | Flask routes, Jinja templates, JavaScript interactions and MongoDB persistence |
+| Data modeling | Users, embedded character data and stored forum threads with character snapshots |
+| Delivery workflow | Docker image/Compose configuration, tests and GitHub Actions deployment configuration |
+
+### My contribution — Yuxuan / Esther Feng
+
+I worked on Docker Compose configuration for the web service, connecting the application to MongoDB Atlas, and maintaining configuration and startup documentation so teammates could reproduce and demonstrate the application. The application and interface were developed collaboratively.
+
+## Run locally with Python
+
+Prerequisites: Python 3.11+, and either your own MongoDB instance or Docker for a local database.
+
 ```bash
 git clone https://github.com/swe-students-fall2025/5-final-bytepilot.git
 cd 5-final-bytepilot
-python -m venv .venv && source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 python -m pip install -r web_app/requirements.txt
-# Ensure MongoDB is reachable (Atlas URI in .env, or start a local container per below)
-python web_app/app.py   # or: flask --app web_app.app run --port 5001
+cp web_app/env.example .env
 ```
-Open http://localhost:5001 and register your first user. Data is stored in the configured MongoDB database; no seed data is required.
 
-### Optional: run MongoDB locally with Docker
+For an isolated local database:
+
 ```bash
-docker run -d --name forum-mongo -p 27017:27017 \
-  -e MONGO_INITDB_ROOT_USERNAME=forum_user \
-  -e MONGO_INITDB_ROOT_PASSWORD=forum_pass \
-  -e MONGO_INITDB_DATABASE=forum_db \
-  mongo:7.0 --auth
+docker run -d --name bytepilot-demo-mongo -p 127.0.0.1:27017:27017 mongo:7
 ```
-Use `MONGO_URI=mongodb://forum_user:forum_pass@localhost:27017/forum_db?authSource=admin` for local Python runs. If you connect from inside a Docker container, use `mongo` as the host when both containers share a network, or `host.docker.internal`/`172.17.0.1` when targeting the host port.
 
-## Run with Docker / Compose
+Set these values in your local `.env`, replacing the session-secret placeholder with your own random secret:
+
+```dotenv
+MONGO_URI=mongodb://localhost:27017
+DB_NAME=forum_db
+SECRET_KEY=replace-with-a-random-session-secret
+```
+
 ```bash
-# 1) Build and start the web app container (uses .env for settings)
+python web_app/app.py
+```
+
+Open **http://localhost:5001**, register a demo account and create your first character. On Windows, activate with `.venv/Scripts/activate`.
+
+## Run the web service with Docker Compose
+
+The existing `docker-compose.yml` starts **only the web service**. Supply a separate MongoDB instance. With the local database above and Docker Desktop on macOS/Windows, set `MONGO_URI=mongodb://host.docker.internal:27017` in `.env`. On Linux, configure a reachable database host or an explicit Docker network; `localhost` inside the web container refers to that container.
+
+Alternatively, use a URI from **your own** MongoDB Atlas cluster and configure its access rules. No team-shared `.env` file is needed.
+
+```bash
 docker compose up --build
-
-# 2) Provide MongoDB:
-#    - Atlas: set MONGO_URI in .env to your cluster URI.
-#    - Local container: start mongo as shown above and set MONGO_URI to point to it.
 ```
-By default the web app is served on http://localhost:5001. The `docker-compose.yml` uses the `.env` file at the repo root for configuration.
 
-## Tests and coverage
+The web service is available on port 5001. Stop it with `docker compose down`.
+
+## Tests and deployment
+
 ```bash
 cd web_app
-python -m pip install -r requirements.txt
-export SECRET_KEY=test-secret-key-for-ci  # required for Flask-Login session
-pytest --cov=app --cov-report=term-missing
+SECRET_KEY=local-test-session-key python -m pytest --cov=app --cov-report=term-missing
 ```
-The suite targets 80%+ coverage and mirrors what runs in CI.
 
-## CI/CD and deployment
-- **PR CI (`ci.yml`)**: runs tests on every pull request.  
-- **Web App CI/CD (`web-app-cicd.yml`)**: on push to `main`/`master`, runs tests, builds/pushes the Docker image to Docker Hub, and deploys to a DigitalOcean droplet via SSH.  
-- **Event logger (`event-logger.yml`)**: optional workflow that records repo events when `COMMIT_LOG_API` is configured.
+- [PR CI](.github/workflows/ci.yml) runs the test gate.
+- [Web CI/CD](.github/workflows/web-app-cicd.yml) contains image-build/push and DigitalOcean deployment steps. It requires the operator's own Docker Hub, SSH and environment secrets.
+- Local exploration does not require publishing a container or deploying a server.
 
-Deployment secrets expected in GitHub Actions:
-```
-DOCKERHUB_USERNAME
-DOCKERHUB_TOKEN
-DO_DROPLET_HOST
-DO_DROPLET_USER
-DO_SSH_PRIVATE_KEY
-WEB_APP_ENV_FILE   # contents of the .env used on the droplet
-COMMIT_LOG_API     # optional, for event-logger workflow
-```
+This is a course prototype. Before public deployment, authentication needs hardening, including password hashing, and database connection strings should be removed from debug output.
 
 ## Team
-- [May Zhou](https://github.com/zz4206)
-- [Morin Zhou](https://github.com/Morinzzz)
-- [Jasmine Zhu](https://github.com/jasminezjr)
-- [Esther Feng](https://github.com/yf2685-beep)
-- [Eason Huang](https://github.com/GILGAMESH605)
+
+[May Zhou](https://github.com/zz4206) · [Morin Zhou](https://github.com/Morinzzz) · [Jasmine Zhu](https://github.com/jasminezjr) · [Esther Feng](https://github.com/yf2685-beep) · [Eason Huang](https://github.com/GILGAMESH605)
+
+NYU Software Engineering, Fall 2025. [Course instructions](instructions.md) · [License](LICENSE)
